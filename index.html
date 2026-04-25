@@ -393,7 +393,7 @@
     inset: 0;
     background: rgba(0,0,0,0.7);
     backdrop-filter: blur(4px);
-    z-index: 100;
+    z-index: 9999;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1935,45 +1935,12 @@ async function loadNewsOnly(artist, force=false) {
 
 // ========== RENDER ==========
 function showAddArtistModal() {
-  // 既にモーダルが開いていたら何もしない
-  if (document.getElementById('addArtistModal')) return;
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.id = 'addArtistModal';
-  overlay.innerHTML = `
-    <div class="modal">
-      <button type="button" class="modal-close" id="addArtistClose" aria-label="閉じる">×</button>
-      <h2 class="modal-title">アーティストを追加</h2>
-      <p class="modal-sub">日本語・英語どちらでもOK。報道されている情報を自動で集めてきます</p>
-      <form id="addArtistForm">
-        <label class="form-label">アーティスト名</label>
-        <input class="form-input" name="name" placeholder="例: 山下達郎、布袋寅泰、Char、Eric Clapton..." required>
-        <div class="form-actions">
-          <button type="button" class="btn" id="addArtistCancel">キャンセル</button>
-          <button type="submit" class="btn btn-primary">追加</button>
-        </div>
-      </form>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-  // 背景タップは無視。明示的なボタンだけで閉じる
-  document.getElementById('addArtistClose').addEventListener('click', closeAddArtistModal);
-  document.getElementById('addArtistCancel').addEventListener('click', closeAddArtistModal);
-  document.getElementById('addArtistForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const name = fd.get('name').trim();
-    if (!name) return;
-    const newArtist = addArtist(name);
-    closeAddArtistModal();
-    setActiveId(newArtist.id);
-    renderApp();
-  });
-  // フォーカス（スマホでキーボード自動表示）
-  setTimeout(() => {
-    const input = overlay.querySelector('input[name="name"]');
-    if (input) input.focus();
-  }, 150);
+  // シンプルな prompt() を使用（スマホでも確実に表示される）
+  const name = prompt('アーティスト名を入力してください\n（例: 布袋寅泰、Eric Clapton）');
+  if (!name || !name.trim()) return;
+  const newArtist = addArtist(name.trim());
+  setActiveId(newArtist.id);
+  renderApp();
 }
 function closeAddArtistModal() {
   const m = document.getElementById('addArtistModal');
@@ -2592,19 +2559,25 @@ function handleAddArtistClick(e) {
   // モーダル表示を少し遅延させて、サイドバーアニメーションが終わってから出す
   setTimeout(() => {
     showAddArtistModal();
-  }, 100);
+  }, 300);
 }
 // document全体で委譲（最も確実、要素がいつ追加されても効く）
+let lastAddClickTime = 0;
 document.addEventListener('click', (e) => {
   if (e.target.closest('#addArtistBtn')) {
-    alert('追加ボタン検出: click');
+    // 重複防止（touchend → click の二重発火対策）
+    const now = Date.now();
+    if (now - lastAddClickTime < 500) return;
+    lastAddClickTime = now;
     handleAddArtistClick(e);
   }
 });
 document.addEventListener('touchend', (e) => {
   if (e.target.closest('#addArtistBtn')) {
-    alert('追加ボタン検出: touchend');
     e.preventDefault();
+    const now = Date.now();
+    if (now - lastAddClickTime < 500) return;
+    lastAddClickTime = now;
     handleAddArtistClick(e);
   }
 }, { passive: false });
