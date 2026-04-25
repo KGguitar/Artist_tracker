@@ -1241,6 +1241,9 @@
     }
     .sidebar-add {
       flex-shrink: 0;
+      position: relative;
+      z-index: 100;
+      margin: 8px 0 0 0;
     }
     .main { padding: 16px 20px 60px; }
     .container { padding: 16px 20px 60px; }
@@ -1470,8 +1473,8 @@
       <div id="artistList"></div>
     </div>
     <div class="sidebar-add" id="addArtistBtn" role="button" tabindex="0">
-      <span>＋</span>
-      <span>アーティストを追加</span>
+      <span style="pointer-events:none">＋</span>
+      <span style="pointer-events:none">アーティストを追加</span>
     </div>
   </aside>
 
@@ -2612,11 +2615,8 @@ function handleAddArtistClick(e) {
     e.preventDefault();
     e.stopPropagation();
   }
-  closeMobileSidebar();
-  // サイドバーアニメーションが終わってからモーダル表示
-  setTimeout(() => {
-    showAddArtistModal();
-  }, 280);
+  // サイドバーを閉じずに即モーダル表示（スマホ対応）
+  showAddArtistModal();
 }
 // 直接ボタンに addEventListener（document委譲をやめる）
 const _addBtnEl = document.getElementById('addArtistBtn');
@@ -2663,7 +2663,20 @@ document.getElementById('sidebarToggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('sidebarOverlay').classList.add('show');
 });
-document.getElementById('sidebarOverlay').addEventListener('click', closeMobileSidebar);
+// オーバーレイクリックでサイドバー閉じる（ただし mousedown が overlay 上で起きた場合のみ）
+let overlayMouseDown = false;
+document.getElementById('sidebarOverlay').addEventListener('mousedown', (e) => {
+  overlayMouseDown = (e.target === e.currentTarget);
+});
+document.getElementById('sidebarOverlay').addEventListener('touchstart', (e) => {
+  overlayMouseDown = (e.target === e.currentTarget);
+}, { passive: true });
+document.getElementById('sidebarOverlay').addEventListener('click', (e) => {
+  if (overlayMouseDown && e.target === e.currentTarget) {
+    closeMobileSidebar();
+  }
+  overlayMouseDown = false;
+});
 
 renderApp();
 </script>
