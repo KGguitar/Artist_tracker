@@ -1487,13 +1487,19 @@
 <script>
   eruda.init({
     tool: ['console'],
-    defaults: { displaySize: 50, transparency: 0.9 }
+    defaults: { displaySize: 40, transparency: 0.7 }
   });
-  // Erudaのフロートボタン位置を上に移動（FABと被らないように）
+  // ErudaのConsoleパネルが画面上半分に出るように
   setTimeout(() => {
+    eruda.show('console');
+    // 上半分に固定
+    const dev = document.querySelector('.eruda-dev-tools');
+    if (dev) {
+      dev.style.cssText += 'position:fixed!important;top:0!important;bottom:auto!important;height:40vh!important;';
+    }
     const erudaEl = document.getElementById('eruda');
-    if (erudaEl) erudaEl.style.cssText = 'all: initial; position: fixed !important; top: 80px !important; left: 8px !important; z-index: 999999 !important;';
-  }, 100);
+    if (erudaEl) erudaEl.style.cssText = 'all: initial; position: fixed !important; top: 8px !important; left: 8px !important; z-index: 999999 !important;';
+  }, 200);
   // グローバルエラーキャッチ
   window.addEventListener('error', (e) => {
     console.error('GLOBAL ERROR:', e.message, 'at', e.filename + ':' + e.lineno);
@@ -2664,8 +2670,15 @@ function handleAddArtistClick(e) {
   showAddArtistModal();
 }
 const _addBtnEl = document.getElementById('addArtistBtn');
+console.log('addBtn found:', !!_addBtnEl);
 if (_addBtnEl) {
   _addBtnEl.addEventListener('click', handleAddArtistClick);
+  // テスト用: onclickでalert（複数のイベント検出）
+  _addBtnEl.onclick = () => {
+    alert('FABクリック検出！これが出ればイベントは届いてる');
+    handleAddArtistClick();
+  };
+  console.log('listeners attached');
 }
 
 // 「↻ 更新」ボタン
