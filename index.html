@@ -1483,6 +1483,22 @@
   transform: scale(0.95);
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>
+  eruda.init({
+    tool: ['console'],
+    defaults: { displaySize: 50, transparency: 0.9 }
+  });
+  // Erudaのフロートボタン位置を上に移動（FABと被らないように）
+  setTimeout(() => {
+    const erudaEl = document.getElementById('eruda');
+    if (erudaEl) erudaEl.style.cssText = 'all: initial; position: fixed !important; top: 80px !important; left: 8px !important; z-index: 999999 !important;';
+  }, 100);
+  // グローバルエラーキャッチ
+  window.addEventListener('error', (e) => {
+    console.error('GLOBAL ERROR:', e.message, 'at', e.filename + ':' + e.lineno);
+  });
+</script>
 </head>
 <body>
 
