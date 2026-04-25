@@ -1451,66 +1451,10 @@
   }
 
 </style>
-<style>
-.fab-add {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: #ff3366;
-  color: white;
-  border: none;
-  font-size: 28px;
-  font-weight: 700;
-  cursor: pointer;
-  z-index: 99999;
-  box-shadow: 0 4px 20px rgba(255,51,102,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  padding: 0;
-  -webkit-tap-highlight-color: rgba(255,255,255,0.3);
-  touch-action: manipulation;
-}
-.fab-add:hover {
-  background: #ff1f55;
-  transform: scale(1.05);
-}
-.fab-add:active {
-  transform: scale(0.95);
-}
-</style>
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>
-  eruda.init({
-    tool: ['console'],
-    defaults: { displaySize: 40, transparency: 0.7 }
-  });
-  // ErudaのConsoleパネルが画面上半分に出るように
-  setTimeout(() => {
-    eruda.show('console');
-    // 上半分に固定
-    const dev = document.querySelector('.eruda-dev-tools');
-    if (dev) {
-      dev.style.cssText += 'position:fixed!important;top:0!important;bottom:auto!important;height:40vh!important;';
-    }
-    const erudaEl = document.getElementById('eruda');
-    if (erudaEl) erudaEl.style.cssText = 'all: initial; position: fixed !important; top: 8px !important; left: 8px !important; z-index: 999999 !important;';
-  }, 200);
-  // グローバルエラーキャッチ
-  window.addEventListener('error', (e) => {
-    console.error('GLOBAL ERROR:', e.message, 'at', e.filename + ':' + e.lineno);
-  });
-</script>
 </head>
 <body>
 
 <button class="sidebar-toggle" id="sidebarToggle">☰</button>
-<button class="fab-add" id="addArtistBtn" type="button" aria-label="アーティスト追加">＋</button>
-<button class="fab-add" id="fabAdd" type="button" aria-label="アーティスト追加">＋</button>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <div class="layout">
@@ -1528,6 +1472,10 @@
       <div class="sidebar-section-label">ARTISTS</div>
       <div id="artistList"></div>
     </div>
+    <button class="sidebar-add" id="addArtistBtn" type="button">
+      <span style="pointer-events:none">＋</span>
+      <span style="pointer-events:none">アーティストを追加</span>
+    </button>
   </aside>
 
   <main class="main">
@@ -2663,22 +2611,15 @@ function showAddArtistModal() {
 
 // 「+ 追加」ボタン
 function handleAddArtistClick(e) {
-  if (e) {
+    if (e) {
     e.preventDefault();
     e.stopPropagation();
   }
   showAddArtistModal();
 }
 const _addBtnEl = document.getElementById('addArtistBtn');
-console.log('addBtn found:', !!_addBtnEl);
 if (_addBtnEl) {
   _addBtnEl.addEventListener('click', handleAddArtistClick);
-  // テスト用: onclickでalert（複数のイベント検出）
-  _addBtnEl.onclick = () => {
-    alert('FABクリック検出！これが出ればイベントは届いてる');
-    handleAddArtistClick();
-  };
-  console.log('listeners attached');
 }
 
 // 「↻ 更新」ボタン
