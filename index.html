@@ -1,0 +1,2892 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Artist Pulse / アーティスト追跡</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Inter:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0a0a0f;
+    --bg-mid: #14141d;
+    --bg-card: #1c1c28;
+    --bg-elev: #232333;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.16);
+    --ink: #f5f5fa;
+    --ink-mid: #b8b8c8;
+    --ink-faint: #6c6c80;
+    --accent: #ff3366;
+    --accent-2: #ffd60a;
+    --accent-3: #5eead4;
+    --accent-4: #a78bfa;
+    --shadow-glow: 0 0 60px rgba(255,51,102,0.15);
+    /* アーティスト固有のテーマカラー（JSで動的に上書き） */
+    --artist-color: #ff3366;
+    --artist-color-rgb: 255,51,102;
+  }
+
+  /* ========== THEMED OVERRIDES (個別アーティスト画面のみ適用) ========== */
+  body.themed .hero-name .accent { color: var(--artist-color); }
+  body.themed .hero::before {
+    background: linear-gradient(135deg,
+      var(--artist-color),
+      rgba(var(--artist-color-rgb), 0.5),
+      var(--accent-3)
+    );
+  }
+  body.themed .hero-meta-dot { background: var(--artist-color); }
+  body.themed .equalizer span { background: var(--artist-color); }
+  body.themed .news-source {
+    background: rgba(var(--artist-color-rgb), 0.18);
+    color: var(--artist-color);
+  }
+  body.themed .news-card.unread {
+    border-left-color: var(--artist-color);
+    box-shadow: -3px 0 12px -6px var(--artist-color);
+  }
+  body.themed .timeline-item.unread { border-left-color: var(--artist-color); }
+  body.themed .timeline-item::before { background: var(--artist-color); }
+  body.themed .timeline-time { color: var(--artist-color); }
+  body.themed .news-card:hover { border-color: var(--artist-color); }
+  body.themed .news-importance[data-level="hot"] {
+    background: rgba(var(--artist-color-rgb), 0.18);
+    color: var(--artist-color);
+  }
+  body.themed .news-unread-badge {
+    background: var(--artist-color);
+    box-shadow: 0 0 8px rgba(var(--artist-color-rgb), 0.45);
+  }
+  body.themed .section-title-icon { background: var(--artist-color); }
+  body.themed .hero-stat-num { color: var(--ink); }
+
+  /* ========== HERO COLOR PICKER ========== */
+  .hero-color-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.3);
+    cursor: pointer;
+    z-index: 3;
+    transition: all 0.2s;
+    box-shadow: 0 0 12px rgba(0,0,0,0.4);
+  }
+  .hero-color-btn:hover {
+    transform: scale(1.1);
+    border-color: rgba(255,255,255,0.6);
+  }
+  .hero-color-picker {
+    position: absolute;
+    top: 56px;
+    right: 16px;
+    background: rgba(20, 20, 29, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    padding: 14px;
+    z-index: 4;
+    display: none;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    min-width: 180px;
+  }
+  .hero-color-picker.open { display: block; }
+  .hero-color-picker-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.15em;
+    margin-bottom: 10px;
+  }
+  .hero-color-swatches {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+  }
+  .color-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .color-swatch:hover {
+    transform: scale(1.15);
+  }
+  .color-swatch.selected {
+    border-color: white;
+    transform: scale(1.1);
+  }
+  .color-swatch.selected::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+
+  /* ========== RELATED ARTISTS ========== */
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .related-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: all 0.2s;
+  }
+  .related-card:hover {
+    border-color: var(--artist-color);
+    transform: translateX(2px);
+  }
+  .related-card[data-registered="true"] {
+    background: var(--bg-elev);
+  }
+  .related-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'Anton', sans-serif;
+    font-size: 18px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .related-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .related-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    color: var(--ink);
+    line-height: 1;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .related-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+  }
+  .related-action {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--artist-color);
+    background: rgba(var(--artist-color-rgb), 0.1);
+    border: 1px solid rgba(var(--artist-color-rgb), 0.3);
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    transition: all 0.15s;
+  }
+  .related-action:hover {
+    background: rgba(var(--artist-color-rgb), 0.25);
+  }
+  .related-card[data-registered="true"] .related-action {
+    color: var(--accent-3);
+    background: rgba(94, 234, 212, 0.1);
+    border-color: rgba(94, 234, 212, 0.3);
+  }
+  .related-card[data-registered="true"] .related-action:hover {
+    background: rgba(94, 234, 212, 0.25);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    background: var(--bg-deep);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at top left, rgba(255,51,102,0.08), transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(94,234,212,0.06), transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ========== SIDEBAR LAYOUT ========== */
+  .layout {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    padding-left: 240px;
+  }
+  .sidebar {
+    border-right: 1px solid var(--border);
+    background: rgba(20, 20, 29, 0.92);
+    backdrop-filter: blur(8px);
+    padding: 24px 16px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 240px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+    z-index: 10;
+  }
+  .sidebar-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0 -4px;
+    padding: 0 4px;
+  }
+  .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+  .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+  #artistList {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Anton', sans-serif;
+    font-size: 18px;
+    color: #ffffff;
+    letter-spacing: 0.05em;
+    padding: 0 8px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .sidebar-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0;
+  }
+  .sidebar-section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #ffffff;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    margin-top: 8px;
+    margin-bottom: 4px;
+    flex-shrink: 0;
+    opacity: 0.9;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: #ffffff;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .sidebar-item:hover {
+    background: var(--bg-card);
+    color: #ffffff;
+  }
+  .sidebar-item.active {
+    background: var(--bg-elev);
+    border-color: var(--accent);
+    color: #ffffff;
+    font-weight: 700;
+  }
+  .sidebar-item.active::before {
+    content: '';
+    width: 3px;
+    height: 16px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  .sidebar-item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  /* renderSidebarで生成される全てのアーティスト名を強制白に */
+  .sidebar a.sidebar-item span.sidebar-item-name,
+  #artistList span.sidebar-item-name,
+  #dashboardItem span.sidebar-item-name {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    opacity: 1 !important;
+  }
+  .sidebar-item-remove {
+    color: var(--ink-faint);
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .sidebar-item:hover .sidebar-item-remove {
+    opacity: 1;
+  }
+  .sidebar-item-remove:hover {
+    background: rgba(255,51,102,0.15);
+    color: var(--accent);
+  }
+  .sidebar-badge {
+    background: var(--accent);
+    color: white;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    line-height: 1.2;
+    min-width: 20px;
+    text-align: center;
+    box-shadow: 0 0 12px rgba(255,51,102,0.4);
+  }
+
+  /* ========== NEWS IMPORTANCE BADGES ========== */
+  .news-importance {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .news-importance[data-level="hot"] {
+    background: rgba(255, 51, 102, 0.15);
+    color: var(--accent);
+  }
+  .news-importance[data-level="live"] {
+    background: rgba(94, 234, 212, 0.15);
+    color: var(--accent-3);
+  }
+  .news-importance[data-level="release"] {
+    background: rgba(167, 139, 250, 0.15);
+    color: var(--accent-4);
+  }
+  .news-unread-badge {
+    background: var(--accent);
+    color: white;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px;
+    letter-spacing: 0.1em;
+    box-shadow: 0 0 8px rgba(255,51,102,0.4);
+  }
+  .news-card.unread,
+  .timeline-item.unread,
+  .artist-card-news-item.unread {
+    border-left: 3px solid var(--accent);
+  }
+  .news-card.unread {
+    box-shadow: -3px 0 12px -6px var(--accent);
+  }
+  .sidebar-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 12px;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    border: none;
+    background: var(--accent);
+    width: 100%;
+    text-align: center;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    box-shadow: 0 0 20px rgba(255,51,102,0.3);
+  }
+  .sidebar-add:hover {
+    background: #ff1f55;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 24px rgba(255,51,102,0.5);
+  }
+  .main {
+    padding: 24px 32px 80px;
+    max-width: 1280px;
+    width: 100%;
+  }
+  .main-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  /* ========== ADD ARTIST MODAL ========== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal {
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 460px;
+    position: relative;
+  }
+  .modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--ink);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+  }
+  .modal-close:hover {
+    background: var(--bg-elev);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .modal-sub {
+    color: var(--ink-mid);
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+
+  /* ========== DASHBOARD ========== */
+  .dashboard-hero {
+    padding: 40px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .dashboard-title {
+    font-family: 'Anton', sans-serif;
+    font-size: clamp(40px, 6vw, 72px);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+  .dashboard-title .accent { color: var(--accent); }
+  .dashboard-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    color: var(--ink-mid);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+  .dashboard-meta-item { display: flex; align-items: center; gap: 6px; }
+  .dashboard-meta-dot { width: 6px; height: 6px; background: var(--accent-3); border-radius: 50%; }
+  .dashboard-empty {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--ink-faint);
+  }
+  .dashboard-empty-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: var(--ink);
+    margin-bottom: 12px;
+    letter-spacing: 0.05em;
+  }
+  .dashboard-empty-sub {
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+  .artist-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+  }
+  .artist-card:hover { border-color: var(--card-color, var(--accent)); }
+  .artist-card-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .artist-card-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--bg-deep);
+    background-size: cover;
+    background-position: center;
+    border: 2px solid var(--border-strong);
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .artist-card-thumb.has-image {
+    border-color: var(--card-color, var(--accent));
+    box-shadow: 0 0 16px rgba(var(--card-color-rgb, 255,51,102), 0.25);
+  }
+  .artist-card-thumb:not(.has-image)::after {
+    content: '♪';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-faint);
+    font-family: 'Anton', sans-serif;
+    font-size: 24px;
+  }
+  .artist-card-name-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+  .artist-card-name {
+    font-family: 'Anton', sans-serif;
+    font-size: 28px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--ink);
+    text-decoration: none;
+    cursor: pointer;
+    display: block;
+  }
+  .artist-card-name:hover { color: var(--card-color, var(--accent)); }
+  .artist-card-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-top: 6px;
+    letter-spacing: 0.02em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .artist-card-action {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .artist-card-news {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .artist-card-news-item {
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s;
+  }
+  .artist-card-news-item:hover { border-color: var(--card-color, var(--accent-3)); }
+  .artist-card-news-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .artist-card-news-title {
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--ink);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .artist-card-loading {
+    color: var(--ink-faint);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    text-align: center;
+    padding: 20px;
+  }
+  .container { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 24px 32px 80px; }
+
+  /* ========== TOP BAR ========== */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Anton', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.05em;
+  }
+  .logo-mark {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-4));
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 0 0 20px rgba(255,51,102,0.4);
+  }
+  .logo-mark::after {
+    content: '';
+    position: absolute;
+    inset: 30%;
+    background: var(--bg-deep);
+    border-radius: 50%;
+  }
+  .logo-text { color: var(--ink); }
+  .logo-text span { color: var(--accent); }
+  .top-actions { display: flex; gap: 12px; align-items: center; }
+  .btn {
+    background: transparent;
+    color: var(--ink-mid);
+    border: 1px solid var(--border-strong);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn:hover { color: var(--ink); border-color: var(--accent); background: rgba(255,51,102,0.05); }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  .btn-primary:hover { background: #ff5588; box-shadow: 0 0 20px rgba(255,51,102,0.4); }
+
+  /* ========== ARTIST SETUP ========== */
+  .setup-screen {
+    min-height: 70vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .setup-mark {
+    font-family: 'Anton', sans-serif;
+    font-size: 14vw;
+    line-height: 0.85;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-4) 50%, var(--accent-3) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 32px;
+    animation: shimmer 8s ease-in-out infinite alternate;
+  }
+  @keyframes shimmer {
+    0% { filter: brightness(1) hue-rotate(0deg); }
+    100% { filter: brightness(1.2) hue-rotate(20deg); }
+  }
+  .setup-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+  }
+  .setup-sub {
+    color: var(--ink-mid);
+    font-size: 15px;
+    margin-bottom: 40px;
+    max-width: 540px;
+    line-height: 1.6;
+  }
+  .setup-form {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 32px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    text-align: left;
+  }
+  .form-label {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    margin-top: 16px;
+  }
+  .form-label:first-child { margin-top: 0; }
+  .form-input {
+    width: 100%;
+    background: var(--bg-deep);
+    border: 1px solid var(--border-strong);
+    color: var(--ink);
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { outline: none; border-color: var(--accent); }
+  .form-hint { font-size: 11px; color: var(--ink-faint); margin-top: 6px; font-family: 'DM Mono', monospace; }
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+  }
+  .form-actions .btn { flex: 1; padding: 12px; font-size: 13px; }
+
+  /* ========== HERO ========== */
+  .hero {
+    position: relative;
+    margin-bottom: 48px;
+    padding: 48px 40px;
+    min-height: 280px;
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-mid) 100%);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center 20%;
+  }
+  .hero.has-image {
+    /* 背景画像時はpaddingを増やしてゴージャスに */
+    padding: 80px 40px 56px;
+    min-height: 380px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-4), var(--accent-3));
+    border-radius: 24px;
+    opacity: 0.15;
+    z-index: 0;
+    filter: blur(20px);
+  }
+  .hero.has-image::before {
+    opacity: 0;
+  }
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: 24px;
+  }
+  .hero.has-image .hero-overlay {
+    background:
+      linear-gradient(180deg,
+        rgba(10, 10, 15, 0.3) 0%,
+        rgba(10, 10, 15, 0.7) 60%,
+        rgba(10, 10, 15, 0.95) 100%),
+      linear-gradient(90deg,
+        rgba(10, 10, 15, 0.6) 0%,
+        rgba(10, 10, 15, 0.2) 50%,
+        rgba(10, 10, 15, 0.4) 100%);
+  }
+  .hero-content { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: end; }
+  .hero-name {
+    font-family: 'Anton', sans-serif;
+    font-size: clamp(48px, 9vw, 110px);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  .hero.has-image .hero-name {
+    text-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  }
+  .hero-name .accent { color: var(--accent); }
+  .hero-description {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-mid);
+    margin-bottom: 12px;
+    letter-spacing: 0.02em;
+    max-width: 600px;
+    line-height: 1.4;
+  }
+  .hero.has-image .hero-description {
+    color: rgba(255,255,255,0.85);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  }
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    color: var(--ink-mid);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+  .hero.has-image .hero-meta {
+    color: rgba(255,255,255,0.75);
+  }
+  .hero-meta-item { display: flex; align-items: center; gap: 6px; }
+  .hero-meta-dot { width: 6px; height: 6px; background: var(--accent-3); border-radius: 50%; }
+  .hero-stats {
+    display: flex;
+    gap: 28px;
+    text-align: right;
+  }
+  .hero-stat-num {
+    font-family: 'Anton', sans-serif;
+    font-size: 42px;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .hero.has-image .hero-stat-num {
+    text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+  }
+  .hero-stat-lbl {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .hero.has-image .hero-stat-lbl {
+    color: rgba(255,255,255,0.6);
+  }
+  .equalizer {
+    position: absolute;
+    bottom: 0;
+    right: 40px;
+    display: flex;
+    gap: 3px;
+    align-items: flex-end;
+    height: 60px;
+    opacity: 0.4;
+  }
+  .equalizer span {
+    width: 3px;
+    background: var(--accent);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  .equalizer span:nth-child(1) { animation-delay: 0s; height: 30%; }
+  .equalizer span:nth-child(2) { animation-delay: 0.1s; height: 60%; }
+  .equalizer span:nth-child(3) { animation-delay: 0.2s; height: 80%; }
+  .equalizer span:nth-child(4) { animation-delay: 0.3s; height: 50%; }
+  .equalizer span:nth-child(5) { animation-delay: 0.15s; height: 70%; }
+  .equalizer span:nth-child(6) { animation-delay: 0.05s; height: 40%; }
+  @keyframes pulse {
+    0%, 100% { transform: scaleY(0.4); }
+    50% { transform: scaleY(1); }
+  }
+
+  /* ========== SECTION ========== */
+  .section { margin-bottom: 56px; }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title-icon {
+    display: inline-block;
+    width: 8px;
+    height: 24px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  .section-title-icon.alt { background: var(--accent-2); }
+  .section-title-icon.alt2 { background: var(--accent-3); }
+  .section-title-icon.alt3 { background: var(--accent-4); }
+  .section-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+  }
+  .section-status {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .loading-state {
+    padding: 32px;
+    text-align: center;
+    color: var(--ink-faint);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+  }
+  .empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--ink-faint);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+  }
+
+  /* ========== NEWS GRID ========== */
+  .news-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 20px;
+  }
+  .news-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.25s;
+    display: flex;
+    flex-direction: column;
+    min-height: 160px;
+  }
+  .news-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    background: var(--bg-elev);
+  }
+  .news-card.feature { grid-row: span 2; min-height: auto; }
+  .news-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .news-source {
+    display: inline-block;
+    background: rgba(255,51,102,0.15);
+    color: var(--accent);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+  .news-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 10px;
+    flex: 1;
+  }
+  .news-card.feature .news-title { font-size: 22px; line-height: 1.3; }
+  .news-desc {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-mid);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .news-card.feature .news-desc { -webkit-line-clamp: 4; }
+
+  /* ========== RELEASES ========== */
+  .release-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+  }
+  .release-card {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    transition: transform 0.25s;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .release-card:hover { transform: translateY(-3px); }
+  .release-cover {
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, var(--accent-4), var(--accent));
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .release-cover::after {
+    content: '';
+    position: absolute;
+    inset: 38%;
+    background: var(--bg-deep);
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+  }
+  .release-cover-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Anton', sans-serif;
+    font-size: 32px;
+    color: rgba(255,255,255,0.9);
+    z-index: 1;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    letter-spacing: -0.02em;
+    text-align: center;
+    padding: 20px;
+    line-height: 1;
+  }
+  .release-card:nth-child(2n) .release-cover { background: linear-gradient(135deg, var(--accent-3), var(--accent-2)); }
+  .release-card:nth-child(3n) .release-cover { background: linear-gradient(135deg, var(--accent-2), var(--accent)); }
+  .release-card:nth-child(4n) .release-cover { background: linear-gradient(225deg, var(--accent-4), var(--accent-3)); }
+  .release-card:nth-child(5n) .release-cover { background: linear-gradient(45deg, var(--accent), var(--accent-3)); }
+  .release-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--ink);
+  }
+  .release-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+  }
+  .release-badge {
+    display: inline-block;
+    background: rgba(255,214,10,0.15);
+    color: var(--accent-2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    margin-right: 6px;
+  }
+
+  /* ========== TOURS ========== */
+  .tour-list { display: flex; flex-direction: column; gap: 12px; }
+  .tour-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 24px;
+    padding: 18px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s;
+  }
+  .tour-item:hover { border-color: var(--accent-3); }
+  .tour-date {
+    font-family: 'Anton', sans-serif;
+    text-align: center;
+    line-height: 1;
+  }
+  .tour-date-day { font-size: 32px; color: var(--accent-3); }
+  .tour-date-month { font-size: 12px; color: var(--ink-faint); margin-top: 4px; letter-spacing: 0.1em; }
+  .tour-info { min-width: 0; }
+  .tour-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+  .tour-venue {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-mid);
+  }
+  .tour-action {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ========== YOUTUBE ========== */
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .video-card {
+    text-decoration: none;
+    color: inherit;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: all 0.25s;
+  }
+  .video-card:hover { border-color: var(--accent-4); transform: translateY(-2px); }
+  .video-thumb {
+    aspect-ratio: 16/9;
+    width: 100%;
+    background: var(--bg-elev);
+    object-fit: cover;
+    display: block;
+  }
+  .video-body { padding: 14px 16px; }
+  .video-title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .video-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+
+  /* ========== TIMELINE ========== */
+  .timeline {
+    position: relative;
+    padding-left: 24px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--border-strong);
+  }
+  .timeline-item {
+    position: relative;
+    padding-bottom: 18px;
+    padding-left: 16px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -22px;
+    top: 6px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--bg-deep);
+  }
+  .timeline-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 4px;
+    letter-spacing: 0.05em;
+  }
+  .timeline-title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .timeline-title:hover { color: var(--accent); }
+  .timeline-source {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    margin-left: 6px;
+  }
+
+  /* ========== RESPONSIVE ========== */
+  @media (max-width: 900px) {
+    .layout { padding-left: 0; }
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 240px;
+      height: 100vh;
+      height: 100dvh;
+      max-height: 100vh;
+      max-height: 100dvh;
+      z-index: 50;
+      transform: translateX(-100%);
+      transition: transform 0.25s;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-toggle {
+      display: flex !important;
+    }
+    .sidebar-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .sidebar-add {
+      flex-shrink: 0;
+    }
+    .main { padding: 16px 20px 60px; }
+    .container { padding: 16px 20px 60px; }
+    .hero { padding: 32px 24px; min-height: 240px; }
+    .hero.has-image { padding: 60px 24px 40px; min-height: 320px; }
+    .hero-content { grid-template-columns: 1fr; gap: 24px; }
+    .hero-stats { justify-content: flex-start; gap: 20px; }
+    .equalizer { display: none; }
+    .news-grid { grid-template-columns: 1fr; }
+    .news-card.feature { grid-row: auto; }
+    .release-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .release-cover-text { font-size: 22px; }
+    .video-grid { grid-template-columns: 1fr; }
+    .tour-item { grid-template-columns: auto 1fr; gap: 16px; padding: 14px 16px; }
+    .tour-action { display: none; }
+    .artist-card-news { grid-template-columns: 1fr; }
+    .artist-card-header { flex-wrap: wrap; }
+    .artist-card-thumb { width: 48px; height: 48px; }
+    .artist-card-name { font-size: 24px; }
+  }
+  @media (max-width: 480px) {
+    .main { padding: 12px 14px 48px; }
+    .container { padding: 12px 14px 48px; }
+    .hero { padding: 24px 18px; border-radius: 16px; }
+    .hero.has-image { padding: 48px 18px 32px; }
+    .section-title { font-size: 22px; }
+    .release-grid { grid-template-columns: 1fr 1fr; }
+    .release-cover-text { font-size: 18px; padding: 12px; }
+  }
+  .sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 60;
+    background: var(--bg-card);
+    border: 1px solid var(--border-strong);
+    color: var(--ink);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 40;
+  }
+  .sidebar-overlay.show { display: block; }
+
+  /* スクロールバー */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg-mid); }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
+
+  /* ========== SOCIAL ========== */
+  .social-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .social-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .social-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: var(--social-color, var(--accent));
+    transition: width 0.2s;
+  }
+  .social-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--social-color, var(--accent));
+  }
+  .social-btn:hover::before {
+    width: 100%;
+    opacity: 0.08;
+  }
+  .social-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: var(--social-color, var(--accent));
+    color: white;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+  .social-icon svg { width: 20px; height: 20px; }
+  .social-info { z-index: 1; min-width: 0; }
+  .social-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .social-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+  }
+  .social-btn[data-platform="x"] { --social-color: #ffffff; }
+  .social-btn[data-platform="x"] .social-icon { background: #000; border: 1px solid var(--border-strong); }
+  .social-btn[data-platform="instagram"] { --social-color: #e4405f; }
+  .social-btn[data-platform="instagram"] .social-icon {
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  }
+  .social-btn[data-platform="tiktok"] { --social-color: #ff0050; }
+  .social-btn[data-platform="tiktok"] .social-icon {
+    background: linear-gradient(135deg, #25f4ee, #fe2c55);
+  }
+  .social-btn[data-platform="youtube"] { --social-color: #ff0000; }
+  .social-btn[data-platform="youtube"] .social-icon { background: #ff0000; }
+  .social-btn[data-platform="google"] { --social-color: #4285f4; }
+  .social-btn[data-platform="google"] .social-icon { background: #4285f4; }
+
+  /* ========== TICKETS ========== */
+  .ticket-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .ticket-btn {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s;
+    border-left: 3px solid var(--ticket-color, var(--accent-3));
+  }
+  .ticket-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--ticket-color, var(--accent-3));
+    background: var(--bg-elev);
+  }
+  .ticket-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ticket-arrow {
+    color: var(--ticket-color, var(--accent-3));
+    font-family: 'DM Mono', monospace;
+    margin-left: auto;
+  }
+  .ticket-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+  }
+  .ticket-btn[data-platform="eplus"] { --ticket-color: #ffd60a; }
+  .ticket-btn[data-platform="pia"] { --ticket-color: #00a0e9; }
+  .ticket-btn[data-platform="lawson"] { --ticket-color: #0080ff; }
+
+  .ticket-subheader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .ticket-subheader-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .ticket-subheader-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+</style>
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle">☰</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark"></div>
+      <div class="logo-text">ARTIST<span style="color:var(--accent)">·</span>PULSE</div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-scroll">
+      <a class="sidebar-item" id="dashboardItem" data-action="dashboard">
+        <span>◇</span>
+        <span class="sidebar-item-name">Dashboard</span>
+      </a>
+      <div class="sidebar-section-label">ARTISTS</div>
+      <div id="artistList"></div>
+    </div>
+    <button class="sidebar-add" id="addArtistBtn">
+      <span>＋</span>
+      <span>アーティストを追加</span>
+    </button>
+  </aside>
+
+  <main class="main">
+    <div class="main-topbar">
+      <button class="btn" id="refreshBtn" style="display:none">↻ 更新</button>
+    </div>
+    <div id="app"></div>
+  </main>
+</div>
+
+<script>
+// ========== STATE ==========
+const ARTISTS_KEY = 'artist_pulse_artists_v2';
+const ACTIVE_KEY = 'artist_pulse_active_v1';
+const CACHE_KEY = 'artist_pulse_cache_v8';
+const SEEN_KEY = 'artist_pulse_seen_v1'; // 既読ニュースID
+const LEGACY_KEY = 'artist_pulse_artist_v1'; // 旧バージョンからの移行用
+const CACHE_TTL = 10 * 60 * 1000;
+
+const PROXIES = [
+  (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  (url) => `https://api.cors.lol/?url=${encodeURIComponent(url)}`,
+  (url) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(url)}`,
+];
+
+// ========== UTIL ==========
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function getDomain(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+}
+function formatRelTime(date) {
+  const now = new Date();
+  const d = new Date(date);
+  const diff = (now - d) / 1000;
+  if (diff < 60) return 'たった今';
+  if (diff < 3600) return Math.floor(diff/60) + '分前';
+  if (diff < 86400) return Math.floor(diff/3600) + '時間前';
+  if (diff < 86400*7) return Math.floor(diff/86400) + '日前';
+  return d.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+}
+function formatDateTitle(date) {
+  const d = new Date(date);
+  return {
+    day: d.getDate(),
+    month: d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase(),
+    year: d.getFullYear(),
+  };
+}
+function genId() {
+  return 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+// ========== THEME COLOR ==========
+// 厳選カラーパレット（音楽的・印象的な色）
+const COLOR_PALETTE = [
+  { name: 'Crimson',   hex: '#ff3366', rgb: '255,51,102' },
+  { name: 'Sunshine',  hex: '#ffd60a', rgb: '255,214,10' },
+  { name: 'Mint',      hex: '#5eead4', rgb: '94,234,212' },
+  { name: 'Lavender',  hex: '#a78bfa', rgb: '167,139,250' },
+  { name: 'Tangerine', hex: '#ff8a3d', rgb: '255,138,61' },
+  { name: 'Sky',       hex: '#38bdf8', rgb: '56,189,248' },
+  { name: 'Lime',      hex: '#a3e635', rgb: '163,230,53' },
+  { name: 'Rose',      hex: '#fb7185', rgb: '251,113,133' },
+  { name: 'Ocean',     hex: '#22d3ee', rgb: '34,211,238' },
+  { name: 'Magenta',   hex: '#e879f9', rgb: '232,121,249' },
+  { name: 'Forest',    hex: '#34d399', rgb: '52,211,153' },
+  { name: 'Sunset',    hex: '#f472b6', rgb: '244,114,182' },
+];
+// アーティスト名から決定論的に色を選ぶ（ハッシュベース）
+function getDefaultColor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash) + name.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % COLOR_PALETTE.length;
+  return COLOR_PALETTE[idx].hex;
+}
+// hexからRGB成分（"R,G,B"形式）に変換
+function hexToRgb(hex) {
+  const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  if (!m) return '255,51,102';
+  return `${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)}`;
+}
+// アーティストの実カラーを取得（手動設定があればそれ、なければ自動）
+function getArtistColor(artist) {
+  if (!artist) return COLOR_PALETTE[0].hex;
+  return artist.color || getDefaultColor(artist.name);
+}
+// アクティブアーティストのカラーをCSS変数として適用
+function applyThemeColor(artist) {
+  const color = artist ? getArtistColor(artist) : COLOR_PALETTE[0].hex;
+  const root = document.documentElement;
+  root.style.setProperty('--artist-color', color);
+  root.style.setProperty('--artist-color-rgb', hexToRgb(color));
+}
+
+// ========== ARTIST CONFIG (複数管理) ==========
+function loadArtists() {
+  try {
+    const raw = localStorage.getItem(ARTISTS_KEY);
+    if (raw) return JSON.parse(raw);
+    // 旧バージョンからの移行
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy) {
+      const old = JSON.parse(legacy);
+      if (old && old.name) {
+        const migrated = [{ id: genId(), name: old.name, addedAt: Date.now() }];
+        localStorage.setItem(ARTISTS_KEY, JSON.stringify(migrated));
+        return migrated;
+      }
+    }
+    return [];
+  } catch { return []; }
+}
+function saveArtists(artists) {
+  localStorage.setItem(ARTISTS_KEY, JSON.stringify(artists));
+}
+function getActiveId() {
+  return localStorage.getItem(ACTIVE_KEY) || null;
+}
+function setActiveId(id) {
+  if (id) localStorage.setItem(ACTIVE_KEY, id);
+  else localStorage.removeItem(ACTIVE_KEY);
+}
+function getActiveArtist() {
+  const id = getActiveId();
+  if (!id) return null;
+  return loadArtists().find(a => a.id === id) || null;
+}
+function addArtist(name) {
+  const artists = loadArtists();
+  const exists = artists.find(a => a.name === name);
+  if (exists) return exists;
+  const newArtist = { id: genId(), name, addedAt: Date.now(), color: getDefaultColor(name) };
+  artists.push(newArtist);
+  saveArtists(artists);
+  return newArtist;
+}
+function updateArtistColor(id, color) {
+  const artists = loadArtists();
+  const a = artists.find(x => x.id === id);
+  if (!a) return;
+  a.color = color;
+  saveArtists(artists);
+}
+function removeArtist(id) {
+  const artists = loadArtists().filter(a => a.id !== id);
+  saveArtists(artists);
+  // キャッシュも削除
+  const cache = loadCacheAll();
+  delete cache[id];
+  saveCacheAll(cache);
+  // アクティブだった場合は解除
+  if (getActiveId() === id) setActiveId(null);
+}
+function loadCacheAll() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function saveCacheAll(cache) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
+}
+function clearCacheFor(id) {
+  const cache = loadCacheAll();
+  delete cache[id];
+  saveCacheAll(cache);
+}
+
+// ========== SEEN/UNREAD MANAGEMENT ==========
+function loadSeenAll() {
+  try {
+    const raw = localStorage.getItem(SEEN_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function saveSeenAll(seen) {
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch {}
+}
+function getSeenIds(artistId) {
+  const seen = loadSeenAll();
+  return new Set(seen[artistId] || []);
+}
+// アーティストの全ニュースを既読化
+function markAsSeen(artistId, newsItems) {
+  if (!newsItems || newsItems.length === 0) return;
+  const seen = loadSeenAll();
+  const existing = new Set(seen[artistId] || []);
+  for (const n of newsItems) {
+    existing.add(newsKey(n));
+  }
+  // 上限300件で打ち切り（古いものから捨てる：実装簡略化のためSetをそのまま保存）
+  const arr = Array.from(existing).slice(-300);
+  seen[artistId] = arr;
+  saveSeenAll(seen);
+}
+// ニュース項目のユニーク識別子
+function newsKey(item) {
+  return (item.guid || item.link || item.title || '').substring(0, 200);
+}
+// 未読ニュースの数を取得
+function getUnreadCount(artistId, newsItems) {
+  if (!newsItems || newsItems.length === 0) return 0;
+  const seenSet = getSeenIds(artistId);
+  return newsItems.filter(n => !seenSet.has(newsKey(n))).length;
+}
+// ニュース項目が未読かどうか
+function isUnread(artistId, item, seenSet) {
+  return !seenSet.has(newsKey(item));
+}
+
+// ========== NEWS IMPORTANCE ==========
+function getNewsImportance(item) {
+  const text = (item.title || '') + ' ' + (item.desc || '');
+  // 🔥 HOT: 重大発表
+  if (/(発表|発売|決定|リリース|新曲|新譜|ニューアルバム|新作|初|ファースト|デビュー|来日|完売|追加公演|追加販売|サプライズ|電撃|電撃結婚|結成|解散|引退|復活|再結成|脱退|加入|受賞|快挙|世界初|日本初)/i.test(text) ||
+      /(announce|announces|released|releases|debut|first|breaking|surprise)/i.test(text)) {
+    return { level: 'hot', label: '🔥', color: '#ff3366' };
+  }
+  // 🎫 LIVE: ライブ/ツアー
+  if (/(ライブ|LIVE|ツアー|TOUR|コンサート|CONCERT|公演|フェス|単独|ワンマン|アリーナ|ドーム|チケット)/i.test(text)) {
+    return { level: 'live', label: '🎫', color: '#5eead4' };
+  }
+  // 💿 RELEASE: リリース系（HOT判定漏れ）
+  if (/(MV|ミュージックビデオ|配信|シングル|アルバム|EP|楽曲|新作|サブスク|Spotify|YouTube)/i.test(text)) {
+    return { level: 'release', label: '💿', color: '#a78bfa' };
+  }
+  // 📰 NEWS: 通常
+  return { level: 'news', label: '📰', color: '#888' };
+}
+
+// ========== RELATED ARTISTS ==========
+// ニュース記事から関連アーティスト名を抽出する
+function extractRelatedArtists(news, selfName) {
+  if (!news || news.length === 0) return [];
+
+  const counter = new Map(); // name -> { count, sample (代表記事) }
+  const selfLower = selfName.toLowerCase();
+
+  // 共演を示すパターン（自分の名前の前後に出てくる人名を抽出）
+  // 区切り記号: × x ✕ X & vs feat. ft. featuring with 対バン 共演 ジョイント
+  const separatorPattern = '(?:\\s*[×xX✕＊*&]\\s*|\\s*(?:vs|VS|featuring|FEATURING|feat\\.?|ft\\.?|with|WITH|対バン|共演|ジョイント|×|＆|と)\\s*)';
+
+  // 抽出対象を絞り込む正規表現群
+  // 日本人名（漢字・ひらがな・カタカナ）または英語名
+  const namePattern = '([一-龥ぁ-んァ-ヶー]{2,15}|[A-Za-z][A-Za-z0-9\\s.&\'-]{1,30}[A-Za-z0-9])';
+
+  for (const item of news) {
+    const text = (item.title || '') + ' ' + (item.desc || '');
+
+    // パターン1: 「A × B」「A & B」「A feat. B」「A vs B」など
+    // 自分の名前を含む共演表現を検索
+    const escapedSelf = selfName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedSelfLower = selfLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // 自分の前後にある名前を抽出
+    const patterns = [
+      new RegExp(`${escapedSelf}${separatorPattern}${namePattern}`, 'g'),
+      new RegExp(`${namePattern}${separatorPattern}${escapedSelf}`, 'g'),
+      new RegExp(`${escapedSelfLower}${separatorPattern}${namePattern}`, 'gi'),
+    ];
+
+    for (const re of patterns) {
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        const candidate = (m[1] || '').trim();
+        if (isValidArtistName(candidate, selfName)) {
+          addCandidate(counter, candidate, item);
+        }
+      }
+    }
+  }
+
+  // パターン2: 既存登録アーティストの名前がニュースに頻出する場合
+  const registeredArtists = loadArtists();
+  for (const reg of registeredArtists) {
+    if (reg.name === selfName) continue;
+    let count = 0;
+    let sampleItem = null;
+    for (const item of news) {
+      const text = (item.title || '') + ' ' + (item.desc || '');
+      if (text.includes(reg.name)) {
+        count++;
+        if (!sampleItem) sampleItem = item;
+      }
+    }
+    if (count >= 1) {
+      // 既存登録は信頼性が高いので、共演パターンでヒットしてなくても候補化
+      addCandidate(counter, reg.name, sampleItem, count + 1);
+    }
+  }
+
+  // 集計結果を配列化、頻度順にソート
+  const sorted = Array.from(counter.values())
+    .map(info => ({ name: info.displayName, count: info.count, sample: info.sample }))
+    .sort((a, b) => b.count - a.count);
+
+  return sorted.slice(0, 12);
+}
+
+function isValidArtistName(name, selfName) {
+  if (!name) return false;
+  if (name === selfName || name.toLowerCase() === selfName.toLowerCase()) return false;
+  if (name.length < 2 || name.length > 30) return false;
+  // よくあるノイズ単語を除外
+  const noiseWords = [
+    'ライブ','ツアー','コンサート','公演','フェス','単独','追加','チケット','発表','発売','決定',
+    '新曲','新譜','アルバム','シングル','配信','MV','音楽','メディア','インタビュー','特集',
+    'YouTube','Spotify','Apple','こちら','詳細','レポート','ニュース','記事','続き','ら',
+    '一覧','まとめ','ランキング','本人','メンバー','スタッフ','ファン','登場','出演','参加',
+    '今回','今年','今月','今夜','本日','明日','昨日','前回','次回','今後','以上','以下',
+    'デビュー','復活','解散','再結成','結成','新加入','脱退','受賞','卒業','活動','休止',
+    'tour','concert','live','show','album','single','release','feat','featuring',
+    'with','vs','versus','ft','official','music','video','news','tickets',
+  ];
+  for (const noise of noiseWords) {
+    if (name === noise || name.toLowerCase() === noise.toLowerCase()) return false;
+  }
+  // 日本語1文字の漢字混じり、不自然な短さ等は除外
+  if (/^[ぁ-んァ-ヶー]{2,3}$/.test(name)) {
+    // 「これ」「あの」みたいなのを除く（短すぎる）
+    if (name.length <= 3) return false;
+  }
+  // 数字主体は除外
+  if (/^\d+$/.test(name)) return false;
+  return true;
+}
+
+function addCandidate(counter, name, sample, weight = 1) {
+  // 同じ人を別表記で重複しないよう正規化（小文字化キー）
+  const key = name.toLowerCase();
+  if (counter.has(key)) {
+    const existing = counter.get(key);
+    existing.count += weight;
+    if (!existing.sample && sample) existing.sample = sample;
+  } else {
+    counter.set(key, { count: weight, sample, displayName: name });
+  }
+}
+async function fetchWithProxy(url, attempt = 1) {
+  // 全プロキシを順番に試す。最大2回繰り返し（attempt = 1, 2）
+  for (let i = 0; i < PROXIES.length; i++) {
+    try {
+      const proxy = PROXIES[i](url);
+      const res = await fetch(proxy, { signal: AbortSignal.timeout(30000) });
+      if (!res.ok) continue;
+      const text = await res.text();
+      if (text && text.length > 50) return text;
+    } catch (e) { continue; }
+  }
+  // 1回目で全失敗したら、少し待ってもう一度
+  if (attempt < 2) {
+    await new Promise(r => setTimeout(r, 800));
+    return fetchWithProxy(url, attempt + 1);
+  }
+  throw new Error('All proxies failed');
+}
+
+function parseRSS(xml) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, 'application/xml');
+  const items = doc.querySelectorAll('item, entry');
+  return Array.from(items).map(item => {
+    const title = item.querySelector('title')?.textContent || '';
+    const link = item.querySelector('link')?.textContent || item.querySelector('link')?.getAttribute('href') || '';
+    const desc = item.querySelector('description, summary, content')?.textContent || '';
+    const pub = item.querySelector('pubDate, published, updated')?.textContent || '';
+    const date = pub ? new Date(pub) : new Date();
+    const guid = item.querySelector('guid, id')?.textContent || link;
+    return {
+      title: title.trim(),
+      link: link.trim(),
+      desc: desc.replace(/<[^>]+>/g, '').trim().substring(0, 300),
+      date: date.toISOString(),
+      guid,
+    };
+  }).filter(i => i.title && i.link);
+}
+
+// ========== SOURCES ==========
+function buildGNews(query, hl='ja', gl='JP') {
+  return `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=${hl}&gl=${gl}&ceid=${gl}:${hl.split('-')[0]}`;
+}
+
+async function fetchNews(artist) {
+  // 1リクエストに集約：名前だけで検索（一番素直）
+  const allItems = [];
+  try {
+    const xml = await fetchWithProxy(buildGNews(artist.name));
+    const items = parseRSS(xml);
+    allItems.push(...items.map(i => ({ ...i, kind: 'news' })));
+  } catch (e) {}
+  // 海外ニュース：英語Google News（名前がアルファベットの場合のみ）
+  if (/^[A-Za-z\s.&'-]+$/.test(artist.name)) {
+    try {
+      const xml = await fetchWithProxy(buildGNews(artist.name, 'en-US', 'US'));
+      const items = parseRSS(xml);
+      allItems.push(...items.map(i => ({ ...i, kind: 'news', overseas: true })));
+    } catch (e) {}
+  }
+  // 重複除去
+  const seen = new Set();
+  return allItems.filter(i => {
+    const key = i.title.substring(0, 40);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).sort((a,b) => new Date(b.date) - new Date(a.date));
+}
+
+async function fetchTours(artist) {
+  // 1リクエストに集約：OR検索でライブ関連語を一気に
+  const allItems = [];
+  const q = `${artist.name} (ライブ OR ツアー OR コンサート OR 公演 OR 来日)`;
+  try {
+    const xml = await fetchWithProxy(buildGNews(q));
+    const items = parseRSS(xml);
+    allItems.push(...items.map(i => ({ ...i, source: 'news' })));
+  } catch (e) {}
+  if (/^[A-Za-z\s.&'-]+$/.test(artist.name)) {
+    try {
+      const xml = await fetchWithProxy(buildGNews(`${artist.name} (tour OR concert OR live)`));
+      const items = parseRSS(xml);
+      allItems.push(...items.map(i => ({ ...i, source: 'news' })));
+    } catch (e) {}
+  }
+
+  // 重複除去
+  const seen = new Set();
+  const dedup = allItems.filter(i => {
+    const key = i.title.substring(0, 40);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // アーティスト名がタイトルか説明文に含まれるものを優先
+  const lowerName = artist.name.toLowerCase();
+  const withName = dedup.filter(i =>
+    i.title.includes(artist.name) ||
+    i.title.toLowerCase().includes(lowerName) ||
+    (i.desc && i.desc.includes(artist.name)) ||
+    (i.desc && i.desc.toLowerCase().includes(lowerName))
+  );
+
+  // ライブ関連語フィルタ
+  const liveKeywords = /(ライブ|LIVE|Live|ツアー|TOUR|Tour|コンサート|CONCERT|Concert|公演|来日|フェス|Fest|Festival|単独|追加|チケット|発表)/;
+  const liveRelated = withName.filter(i => liveKeywords.test(i.title) || liveKeywords.test(i.desc || ''));
+
+  return (liveRelated.length > 0 ? liveRelated : withName)
+    .sort((a,b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 20);
+}
+
+// アーティスト画像取得（Wikipedia REST API経由、CORS対応）
+async function fetchArtistImage(artist) {
+  // 日本語Wikipediaを優先、見つからなければ英語Wikipediaも試す
+  const wikis = ['ja', 'en'];
+  for (const wiki of wikis) {
+    try {
+      // まずopensearch でページタイトルを正確に解決
+      const searchUrl = `https://${wiki}.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(artist.name)}&limit=1&namespace=0&format=json&origin=*`;
+      const sRes = await fetch(searchUrl, { signal: AbortSignal.timeout(15000) });
+      if (!sRes.ok) continue;
+      const sData = await sRes.json();
+      const pageTitle = sData?.[1]?.[0];
+      if (!pageTitle) continue;
+
+      // page summary で画像取得
+      const summaryUrl = `https://${wiki}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle)}`;
+      const res = await fetch(summaryUrl, { signal: AbortSignal.timeout(15000) });
+      if (!res.ok) continue;
+      const data = await res.json();
+      // originalimage > thumbnail の順で大きい画像を優先
+      const imageUrl = data?.originalimage?.source || data?.thumbnail?.source || null;
+      if (imageUrl) {
+        return {
+          image: imageUrl,
+          width: data?.originalimage?.width || data?.thumbnail?.width || null,
+          height: data?.originalimage?.height || data?.thumbnail?.height || null,
+          description: data?.description || null,
+          extract: data?.extract ? data.extract.substring(0, 200) : null,
+        };
+      }
+    } catch (e) {}
+  }
+  return null;
+}
+
+
+// ========== CACHE ==========
+async function loadAllData(artist, force=false) {
+  if (!force) {
+    const cache = loadCacheAll();
+    const entry = cache[artist.id];
+    if (entry && (Date.now() - entry.ts) < CACHE_TTL) {
+      return entry.data;
+    }
+  }
+  // 既存キャッシュから画像情報を取り出す（画像は7日キャッシュ）
+  const existingCache = loadCacheAll()[artist.id]?.data || {};
+  const imageNeedsRefresh = !existingCache.artistImage ||
+    !existingCache.artistImageTs ||
+    (Date.now() - existingCache.artistImageTs) > 7 * 24 * 60 * 60 * 1000;
+
+  const [news, tours, artistImage] = await Promise.all([
+    fetchNews(artist).catch(()=>[]),
+    fetchTours(artist).catch(()=>[]),
+    imageNeedsRefresh
+      ? fetchArtistImage(artist).catch(()=>null)
+      : Promise.resolve(existingCache.artistImage),
+  ]);
+  const data = {
+    news,
+    tours,
+    artistImage: artistImage || existingCache.artistImage || null,
+    artistImageTs: artistImage ? Date.now() : existingCache.artistImageTs || null,
+  };
+  const cache = loadCacheAll();
+  cache[artist.id] = { ts: Date.now(), data };
+  saveCacheAll(cache);
+  return data;
+}
+
+// ダッシュボード用：アーティスト画像のみ取得（超軽量、7日キャッシュ）
+async function loadArtistImageOnly(artist) {
+  const cache = loadCacheAll();
+  const entry = cache[artist.id];
+  if (entry?.data?.artistImage && entry?.data?.artistImageTs &&
+      (Date.now() - entry.data.artistImageTs) < 7 * 24 * 60 * 60 * 1000) {
+    return entry.data.artistImage;
+  }
+  const img = await fetchArtistImage(artist).catch(()=>null);
+  if (img) {
+    const existing = cache[artist.id]?.data || {};
+    cache[artist.id] = {
+      ts: cache[artist.id]?.ts || Date.now(),
+      data: { ...existing, artistImage: img, artistImageTs: Date.now() },
+    };
+    saveCacheAll(cache);
+  }
+  return img;
+}
+async function loadNewsOnly(artist, force=false) {
+  if (!force) {
+    const cache = loadCacheAll();
+    const entry = cache[artist.id];
+    if (entry && (Date.now() - entry.ts) < CACHE_TTL && entry.data?.news) {
+      return entry.data.news;
+    }
+  }
+  const news = await fetchNews(artist).catch(()=>[]);
+  // ニュースだけキャッシュに反映（toursは既存があれば残す）
+  const cache = loadCacheAll();
+  const existing = cache[artist.id]?.data || {};
+  cache[artist.id] = {
+    ts: Date.now(),
+    data: { ...existing, news },
+  };
+  saveCacheAll(cache);
+  return news;
+}
+
+// ========== RENDER ==========
+function showAddArtistModal() {
+  // 既にモーダルが開いていたら何もしない
+  if (document.getElementById('addArtistModal')) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'addArtistModal';
+  overlay.innerHTML = `
+    <div class="modal">
+      <button type="button" class="modal-close" id="addArtistClose" aria-label="閉じる">×</button>
+      <h2 class="modal-title">アーティストを追加</h2>
+      <p class="modal-sub">日本語・英語どちらでもOK。報道されている情報を自動で集めてきます</p>
+      <form id="addArtistForm">
+        <label class="form-label">アーティスト名</label>
+        <input class="form-input" name="name" placeholder="例: 山下達郎、布袋寅泰、Char、Eric Clapton..." required>
+        <div class="form-actions">
+          <button type="button" class="btn" id="addArtistCancel">キャンセル</button>
+          <button type="submit" class="btn btn-primary">追加</button>
+        </div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  // 背景タップは無視。明示的なボタンだけで閉じる
+  document.getElementById('addArtistClose').addEventListener('click', closeAddArtistModal);
+  document.getElementById('addArtistCancel').addEventListener('click', closeAddArtistModal);
+  document.getElementById('addArtistForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const name = fd.get('name').trim();
+    if (!name) return;
+    const newArtist = addArtist(name);
+    closeAddArtistModal();
+    setActiveId(newArtist.id);
+    renderApp();
+  });
+  // フォーカス（スマホでキーボード自動表示）
+  setTimeout(() => {
+    const input = overlay.querySelector('input[name="name"]');
+    if (input) input.focus();
+  }, 150);
+}
+function closeAddArtistModal() {
+  const m = document.getElementById('addArtistModal');
+  if (m) m.remove();
+}
+
+function renderHero(artist, data) {
+  const newsCount = data.news?.length || 0;
+  const toursCount = data.tours?.length || 0;
+  const img = data.artistImage;
+  const hasImage = img && img.image;
+  const description = img?.description || '';
+  const currentColor = getArtistColor(artist);
+
+  const bgStyle = hasImage
+    ? `style="background-image: url('${escapeHtml(img.image)}');"`
+    : '';
+
+  // カラーピッカー（12色のスウォッチ）
+  const swatches = COLOR_PALETTE.map(c => `
+    <button class="color-swatch ${c.hex.toLowerCase() === currentColor.toLowerCase() ? 'selected' : ''}"
+            data-color="${c.hex}"
+            style="background:${c.hex};box-shadow:0 0 8px ${c.hex}66"
+            title="${c.name}"></button>
+  `).join('');
+
+  return `
+    <section class="hero ${hasImage ? 'has-image' : ''}" ${bgStyle}>
+      <div class="hero-overlay"></div>
+      <button class="hero-color-btn" id="heroColorBtn" title="テーマカラーを変更" style="background:${currentColor}"></button>
+      <div class="hero-color-picker" id="heroColorPicker">
+        <div class="hero-color-picker-label">THEME COLOR</div>
+        <div class="hero-color-swatches">${swatches}</div>
+      </div>
+      <div class="hero-content">
+        <div>
+          <h1 class="hero-name">${escapeHtml(artist.name)}<span class="accent">.</span></h1>
+          ${description ? `<div class="hero-description">${escapeHtml(description)}</div>` : ''}
+          <div class="hero-meta">
+            <span class="hero-meta-item"><span class="hero-meta-dot"></span>NOW TRACKING</span>
+            <span class="hero-meta-item"><span class="hero-meta-dot"></span>UPDATED ${new Date().toLocaleDateString('ja-JP', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
+          </div>
+        </div>
+        <div class="hero-stats">
+          <div>
+            <div class="hero-stat-num">${newsCount}</div>
+            <div class="hero-stat-lbl">News</div>
+          </div>
+          <div>
+            <div class="hero-stat-num">${toursCount}</div>
+            <div class="hero-stat-lbl">Lives</div>
+          </div>
+        </div>
+      </div>
+      <div class="equalizer">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </section>
+  `;
+}
+
+function renderNews(news, artistId) {
+  if (!news?.length) {
+    return `
+      <section class="section">
+        <div class="section-header">
+          <div class="section-title"><span class="section-title-icon"></span>LATEST NEWS</div>
+          <span class="section-count">0 items</span>
+        </div>
+        <div class="empty-state">ニュースが見つかりませんでした</div>
+      </section>
+    `;
+  }
+  const items = news.slice(0, 7);
+  const seenSet = artistId ? getSeenIds(artistId) : new Set();
+  const unreadCount = artistId ? items.filter(i => !seenSet.has(newsKey(i))).length : 0;
+
+  const renderImportance = (item) => {
+    const imp = getNewsImportance(item);
+    if (imp.level === 'news') return '';
+    return `<span class="news-importance" data-level="${imp.level}">${imp.label} ${imp.level.toUpperCase()}</span>`;
+  };
+  const renderUnread = (item) => {
+    if (!artistId) return '';
+    return seenSet.has(newsKey(item)) ? '' : '<span class="news-unread-badge">NEW</span>';
+  };
+  const isUnreadCls = (item) => artistId && !seenSet.has(newsKey(item)) ? 'unread' : '';
+
+  const [feature, ...rest] = items;
+  const cards = [
+    `<a class="news-card feature ${isUnreadCls(feature)}" href="${escapeHtml(feature.link)}" target="_blank" rel="noopener">
+      <div class="news-meta">
+        ${renderUnread(feature)}
+        ${renderImportance(feature)}
+        <span class="news-source">${escapeHtml(getDomain(feature.link))}</span>
+        <span>${formatRelTime(feature.date)}</span>
+      </div>
+      <h3 class="news-title">${escapeHtml(feature.title)}</h3>
+      <p class="news-desc">${escapeHtml(feature.desc)}</p>
+    </a>`,
+    ...rest.slice(0, 6).map(item => `
+      <a class="news-card ${isUnreadCls(item)}" href="${escapeHtml(item.link)}" target="_blank" rel="noopener">
+        <div class="news-meta">
+          ${renderUnread(item)}
+          ${renderImportance(item)}
+          <span class="news-source">${escapeHtml(getDomain(item.link))}</span>
+          <span>${formatRelTime(item.date)}</span>
+        </div>
+        <h3 class="news-title">${escapeHtml(item.title)}</h3>
+      </a>
+    `),
+  ].join('');
+  const countBadge = unreadCount > 0
+    ? `<span class="section-count" style="color:var(--accent);font-weight:600">🆕 ${unreadCount} new / ${news.length} items</span>`
+    : `<span class="section-count">${news.length} items</span>`;
+  return `
+    <section class="section">
+      <div class="section-header">
+        <div class="section-title"><span class="section-title-icon"></span>LATEST NEWS</div>
+        ${countBadge}
+      </div>
+      <div class="news-grid">${cards}</div>
+    </section>
+  `;
+}
+
+
+function renderTours(tours, artist) {
+  const ticketLinks = renderTicketLinks(artist);
+
+  if (!tours?.length) {
+    return `
+      <section class="section">
+        <div class="section-header">
+          <div class="section-title"><span class="section-title-icon alt2"></span>TOURS &amp; LIVES</div>
+          <span class="section-count">各サイトで検索</span>
+        </div>
+        <div class="empty-state" style="margin-bottom:20px">関連ニュースは見つかりませんでした<br>下のチケットサイトで直接検索できます</div>
+        <div class="ticket-grid">${ticketLinks}</div>
+      </section>
+    `;
+  }
+
+  const items = tours.slice(0, 15);
+  const cards = items.map(t => {
+    const d = formatDateTitle(t.date);
+    return `
+      <a class="tour-item" href="${escapeHtml(t.link)}" target="_blank" rel="noopener">
+        <div class="tour-date">
+          <div class="tour-date-day">${d.day}</div>
+          <div class="tour-date-month">${d.month}</div>
+        </div>
+        <div class="tour-info">
+          <div class="tour-title">${escapeHtml(t.title)}</div>
+          <div class="tour-venue">📰 ${escapeHtml(getDomain(t.link))}</div>
+        </div>
+        <div class="tour-action">NEWS →</div>
+      </a>
+    `;
+  }).join('');
+  return `
+    <section class="section">
+      <div class="section-header">
+        <div class="section-title"><span class="section-title-icon alt2"></span>TOURS &amp; LIVES</div>
+        <span class="section-count">${tours.length} news</span>
+      </div>
+      <div class="tour-list" style="margin-bottom:24px">${cards}</div>
+      <div class="ticket-subheader">
+        <span class="ticket-subheader-line"></span>
+        <span class="ticket-subheader-text">チケット検索</span>
+        <span class="ticket-subheader-line"></span>
+      </div>
+      <div class="ticket-grid">${ticketLinks}</div>
+    </section>
+  `;
+}
+
+
+function renderSocial(artist) {
+  const q = encodeURIComponent(artist.name);
+  const platforms = [
+    {
+      id: 'x',
+      name: 'X (Twitter)',
+      sub: 'POSTS &amp; REPOSTS',
+      url: `https://x.com/search?q=${q}&f=live`,
+      icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>'
+    },
+    {
+      id: 'instagram',
+      name: 'Instagram',
+      sub: 'POSTS &amp; REELS',
+      url: `https://www.instagram.com/explore/search/keyword/?q=${q}`,
+      icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>'
+    },
+    {
+      id: 'tiktok',
+      name: 'TikTok',
+      sub: 'VIDEOS &amp; CLIPS',
+      url: `https://www.tiktok.com/search?q=${q}`,
+      icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>'
+    },
+    {
+      id: 'youtube',
+      name: 'YouTube',
+      sub: 'VIDEOS &amp; LIVES',
+      url: `https://www.youtube.com/results?search_query=${q}`,
+      icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>'
+    },
+    {
+      id: 'google',
+      name: 'Google',
+      sub: 'WEB SEARCH',
+      url: `https://www.google.com/search?q=${q}`,
+      icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>'
+    },
+  ];
+  const cards = platforms.map(p => `
+    <a class="social-btn" data-platform="${p.id}" href="${escapeHtml(p.url)}" target="_blank" rel="noopener">
+      <div class="social-icon">${p.icon}</div>
+      <div class="social-info">
+        <div class="social-name">${p.name}</div>
+        <div class="social-sub">${p.sub}</div>
+      </div>
+    </a>
+  `).join('');
+  return `
+    <section class="section">
+      <div class="section-header">
+        <div class="section-title"><span class="section-title-icon alt3"></span>SOCIAL SEARCH</div>
+        <span class="section-count">tap to search</span>
+      </div>
+      <div class="social-grid">${cards}</div>
+    </section>
+  `;
+}
+
+function renderTicketLinks(artist) {
+  const q = encodeURIComponent(artist.name);
+  const platforms = [
+    {
+      id: 'lawson',
+      name: 'ローチケ',
+      sub: 'L-TIKE.COM',
+      url: `https://l-tike.com/search/?keyword=${q}`,
+    },
+    {
+      id: 'eplus',
+      name: 'イープラス',
+      sub: 'EPLUS.JP (Google検索)',
+      url: `https://www.google.com/search?q=${q}+site%3Aeplus.jp`,
+    },
+    {
+      id: 'pia',
+      name: 'チケットぴあ',
+      sub: 'T.PIA.JP (Google検索)',
+      url: `https://www.google.com/search?q=${q}+site%3At.pia.jp`,
+    },
+  ];
+  return platforms.map(p => `
+    <a class="ticket-btn" data-platform="${p.id}" href="${escapeHtml(p.url)}" target="_blank" rel="noopener">
+      <div class="ticket-name">${p.name}<span class="ticket-arrow">→</span></div>
+      <div class="ticket-sub">${p.sub}</div>
+    </a>
+  `).join('');
+}
+
+function renderRelated(related, currentArtist) {
+  if (!related || related.length === 0) return '';
+
+  const registeredArtists = loadArtists();
+  const registeredNames = new Set(registeredArtists.map(a => a.name.toLowerCase()));
+
+  const cards = related.map(r => {
+    const isRegistered = registeredNames.has(r.name.toLowerCase());
+    const registered = registeredArtists.find(a => a.name.toLowerCase() === r.name.toLowerCase());
+    const color = registered ? getArtistColor(registered) : 'var(--ink-faint)';
+
+    return `
+      <div class="related-card" data-name="${escapeHtml(r.name)}" data-registered="${isRegistered ? 'true' : 'false'}" ${registered ? `data-id="${escapeHtml(registered.id)}"` : ''}>
+        <div class="related-avatar" style="background:${color}">${escapeHtml(r.name.charAt(0).toUpperCase())}</div>
+        <div class="related-body">
+          <div class="related-name">${escapeHtml(r.name)}</div>
+          <div class="related-meta">${r.count}件の言及${isRegistered ? ' · 登録済' : ''}</div>
+        </div>
+        <button class="related-action" data-action="${isRegistered ? 'open-related' : 'add-related'}" data-name="${escapeHtml(r.name)}" ${registered ? `data-id="${escapeHtml(registered.id)}"` : ''}>
+          ${isRegistered ? 'OPEN →' : '+ 追加'}
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <section class="section">
+      <div class="section-header">
+        <div class="section-title"><span class="section-title-icon"></span>RELATED ARTISTS</div>
+        <span class="section-count">${related.length}人を発見</span>
+      </div>
+      <div class="related-grid">${cards}</div>
+    </section>
+  `;
+}
+
+function renderTimeline(news, artistId) {
+  if (!news?.length) return '';
+  const items = news.slice(0, 12);
+  const seenSet = artistId ? getSeenIds(artistId) : new Set();
+  const cards = items.map(n => {
+    const imp = getNewsImportance(n);
+    const unread = artistId && !seenSet.has(newsKey(n));
+    const impBadge = imp.level !== 'news'
+      ? `<span class="news-importance" data-level="${imp.level}" style="margin-left:6px">${imp.label}</span>`
+      : '';
+    const newBadge = unread ? '<span class="news-unread-badge" style="margin-left:6px">NEW</span>' : '';
+    return `
+      <div class="timeline-item ${unread ? 'unread' : ''}">
+        <div class="timeline-time">${formatRelTime(n.date)}${newBadge}${impBadge}</div>
+        <a class="timeline-title" href="${escapeHtml(n.link)}" target="_blank" rel="noopener">
+          ${escapeHtml(n.title)}<span class="timeline-source">— ${escapeHtml(getDomain(n.link))}</span>
+        </a>
+      </div>
+    `;
+  }).join('');
+  return `
+    <section class="section">
+      <div class="section-header">
+        <div class="section-title"><span class="section-title-icon"></span>TIMELINE</div>
+        <span class="section-count">直近${items.length}件の動向</span>
+      </div>
+      <div class="timeline">${cards}</div>
+    </section>
+  `;
+}
+
+function renderLoading(artist) {
+  document.getElementById('app').innerHTML = `
+    <section class="hero">
+      <div class="hero-content">
+        <div>
+          <h1 class="hero-name">${escapeHtml(artist.name)}<span class="accent">.</span></h1>
+          <div class="hero-meta">
+            <span class="hero-meta-item"><span class="hero-meta-dot"></span>LOADING...</span>
+          </div>
+        </div>
+      </div>
+      <div class="equalizer"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    </section>
+    <div class="loading-state">情報を取得中... 複数ソースから並列取得しています</div>
+  `;
+}
+
+// ========== SIDEBAR ==========
+function renderSidebar() {
+  const artists = loadArtists();
+  const activeId = getActiveId();
+  const dashItem = document.getElementById('dashboardItem');
+  // ダッシュボード自体の未読合計
+  const cache = loadCacheAll();
+  let totalUnread = 0;
+  for (const a of artists) {
+    const news = cache[a.id]?.data?.news || [];
+    totalUnread += getUnreadCount(a.id, news);
+  }
+  if (dashItem) {
+    dashItem.classList.toggle('active', !activeId);
+    // ダッシュボードに合計バッジ
+    const badge = totalUnread > 0
+      ? `<span class="sidebar-badge">${totalUnread}</span>`
+      : '';
+    dashItem.innerHTML = `
+      <span>◇</span>
+      <span class="sidebar-item-name">Dashboard</span>
+      ${badge}
+    `;
+  }
+  const list = document.getElementById('artistList');
+  if (!list) return;
+  if (artists.length === 0) {
+    list.innerHTML = `<div style="font-size:11px;color:var(--ink-faint);padding:8px;font-family:'DM Mono',monospace">登録なし</div>`;
+    return;
+  }
+  list.innerHTML = artists.map(a => {
+    const news = cache[a.id]?.data?.news || [];
+    const unread = getUnreadCount(a.id, news);
+    const color = getArtistColor(a);
+    const badge = unread > 0
+      ? `<span class="sidebar-badge" style="background:${color};box-shadow:0 0 12px ${color}66">${unread}</span>`
+      : '';
+    return `
+      <a class="sidebar-item ${a.id === activeId ? 'active' : ''}" data-action="select" data-id="${escapeHtml(a.id)}" ${a.id === activeId ? `style="border-color:${color}"` : ''}>
+        <span style="font-size:8px;color:${unread > 0 ? color : 'var(--ink-faint)'}">●</span>
+        <span class="sidebar-item-name">${escapeHtml(a.name)}</span>
+        ${badge}
+        <span class="sidebar-item-remove" data-action="remove" data-id="${escapeHtml(a.id)}" title="削除">×</span>
+      </a>
+    `;
+  }).join('');
+}
+
+// ========== DASHBOARD ==========
+function renderDashboardSkeleton() {
+  const artists = loadArtists();
+  if (artists.length === 0) {
+    return `
+      <div class="dashboard-empty">
+        <div class="dashboard-empty-title">追跡するアーティストを追加</div>
+        <div class="dashboard-empty-sub">サイドバーの「+ アーティストを追加」から、好きなアーティストを登録してください</div>
+        <button class="btn btn-primary" id="addFirstBtn">＋ アーティストを追加</button>
+      </div>
+    `;
+  }
+  const cards = artists.map(a => {
+    const color = getArtistColor(a);
+    return `
+      <article class="artist-card" id="dashcard-${a.id}" style="--card-color: ${color}; --card-color-rgb: ${hexToRgb(color)}">
+        <div class="artist-card-header">
+          <div class="artist-card-thumb" id="dashthumb-${a.id}"></div>
+          <div class="artist-card-name-wrap">
+            <a class="artist-card-name" data-action="select" data-id="${escapeHtml(a.id)}">${escapeHtml(a.name)}</a>
+            <div class="artist-card-desc" id="dashdesc-${a.id}"></div>
+          </div>
+          <a class="artist-card-action" data-action="select" data-id="${escapeHtml(a.id)}">VIEW ALL →</a>
+        </div>
+        <div class="artist-card-news" id="dashnews-${a.id}">
+          <div class="artist-card-loading">読み込み中...</div>
+        </div>
+      </article>
+    `;
+  }).join('');
+  return `
+    <div class="dashboard-hero">
+      <h1 class="dashboard-title">DASHBOARD<span class="accent">.</span></h1>
+      <div class="dashboard-meta">
+        <span class="dashboard-meta-item"><span class="dashboard-meta-dot"></span>${artists.length} ARTISTS</span>
+        <span class="dashboard-meta-item"><span class="dashboard-meta-dot"></span>UPDATED ${new Date().toLocaleDateString('ja-JP', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
+      </div>
+    </div>
+    ${cards}
+  `;
+}
+
+async function fillDashboardCards() {
+  const artists = loadArtists();
+
+  // 画像は並列で先に取得開始（軽量）
+  const imagePromises = artists.map(a => loadArtistImageOnly(a).catch(() => null));
+
+  // 直列実行：1人ずつ順番にニュースを取得（CORSプロキシのレートリミット回避）
+  // キャッシュがあるアーティストは即座に表示し、なければ取得する
+  for (let i = 0; i < artists.length; i++) {
+    const a = artists[i];
+    const target = document.getElementById(`dashnews-${a.id}`);
+
+    // 画像が取れたらサムネ反映（並列開始済みなのですぐ取れる）
+    imagePromises[i].then(img => {
+      if (!img || !img.image) return;
+      const thumb = document.getElementById(`dashthumb-${a.id}`);
+      if (thumb) {
+        thumb.style.backgroundImage = `url('${img.image}')`;
+        thumb.classList.add('has-image');
+      }
+      const desc = document.getElementById(`dashdesc-${a.id}`);
+      if (desc && img.description) {
+        desc.textContent = img.description;
+      }
+    });
+
+    if (!target) continue;
+    try {
+      const news = await loadNewsOnly(a);
+      const items = (news || []).slice(0, 3);
+      if (items.length === 0) {
+        target.innerHTML = `<div class="artist-card-loading">最新ニュースなし</div>`;
+        continue;
+      }
+      const seenSet = getSeenIds(a.id);
+      const unreadCount = (news || []).filter(n => !seenSet.has(newsKey(n))).length;
+
+      // ヘッダーに未読件数を表示（カードヘッダーを書き換える）
+      const cardEl = document.getElementById(`dashcard-${a.id}`);
+      if (cardEl && unreadCount > 0) {
+        const action = cardEl.querySelector('.artist-card-action');
+        if (action) {
+          action.innerHTML = `<span style="color:var(--accent);font-weight:600">🆕 ${unreadCount} NEW</span> · VIEW ALL →`;
+        }
+      }
+
+      target.innerHTML = items.map(n => {
+        const imp = getNewsImportance(n);
+        const unread = !seenSet.has(newsKey(n));
+        const impBadge = imp.level !== 'news'
+          ? `<span class="news-importance" data-level="${imp.level}">${imp.label}</span>`
+          : '';
+        const newBadge = unread ? '<span class="news-unread-badge">NEW</span>' : '';
+        return `
+          <a class="artist-card-news-item ${unread ? 'unread' : ''}" href="${escapeHtml(n.link)}" target="_blank" rel="noopener">
+            <div class="artist-card-news-meta">
+              ${newBadge}
+              ${impBadge}
+              <span>${escapeHtml(getDomain(n.link))}</span>
+              <span>${formatRelTime(n.date)}</span>
+            </div>
+            <div class="artist-card-news-title">${escapeHtml(n.title)}</div>
+          </a>
+        `;
+      }).join('');
+    } catch (e) {
+      target.innerHTML = `<div class="artist-card-loading">取得失敗 (再読込で再取得)</div>`;
+    }
+  }
+  // 全部読み込み終わったらサイドバーを最新に
+  renderSidebar();
+}
+
+// ========== APP ==========
+async function renderApp() {
+  renderSidebar();
+  const artists = loadArtists();
+  const activeId = getActiveId();
+  const refreshBtn = document.getElementById('refreshBtn');
+
+  // ダッシュボード表示（アクティブIDがないか、アクティブなアーティストが削除済み）
+  const activeArtist = activeId ? artists.find(a => a.id === activeId) : null;
+  if (!activeArtist) {
+    document.body.classList.remove('themed');
+    applyThemeColor(null);
+    if (refreshBtn) refreshBtn.style.display = artists.length > 0 ? '' : 'none';
+    document.getElementById('app').innerHTML = renderDashboardSkeleton();
+    if (artists.length === 0) {
+      const btn = document.getElementById('addFirstBtn');
+      if (btn) btn.addEventListener('click', showAddArtistModal);
+    } else {
+      fillDashboardCards();
+    }
+    return;
+  }
+
+  // 個別アーティスト表示：テーマカラー適用
+  document.body.classList.add('themed');
+  applyThemeColor(activeArtist);
+
+  if (refreshBtn) refreshBtn.style.display = '';
+  renderLoading(activeArtist);
+  const data = await loadAllData(activeArtist);
+
+  // 表示中もアクティブが変わってなければ反映
+  if (getActiveId() !== activeArtist.id) return;
+  const related = extractRelatedArtists(data.news, activeArtist.name);
+  document.getElementById('app').innerHTML =
+    renderHero(activeArtist, data) +
+    renderNews(data.news, activeArtist.id) +
+    renderTours(data.tours, activeArtist) +
+    renderSocial(activeArtist) +
+    renderRelated(related, activeArtist) +
+    renderTimeline(data.news, activeArtist.id);
+
+  // 表示後に少し待ってから既読化（NEWバッジが見えてから消える）
+  setTimeout(() => {
+    if (getActiveId() === activeArtist.id) {
+      markAsSeen(activeArtist.id, data.news);
+      renderSidebar();
+    }
+  }, 2500);
+}
+
+// ========== EVENTS ==========
+// サイドバーのクリック処理（イベント委譲）
+document.getElementById('sidebar').addEventListener('click', (e) => {
+  const removeBtn = e.target.closest('[data-action="remove"]');
+  if (removeBtn) {
+    e.stopPropagation();
+    e.preventDefault();
+    const id = removeBtn.getAttribute('data-id');
+    const a = loadArtists().find(x => x.id === id);
+    if (a && confirm(`「${a.name}」を削除しますか？`)) {
+      removeArtist(id);
+      renderApp();
+    }
+    return;
+  }
+  const item = e.target.closest('[data-action]');
+  if (!item) return;
+  const action = item.getAttribute('data-action');
+  if (action === 'dashboard') {
+    setActiveId(null);
+    closeMobileSidebar();
+    renderApp();
+  } else if (action === 'select') {
+    const id = item.getAttribute('data-id');
+    setActiveId(id);
+    closeMobileSidebar();
+    renderApp();
+  }
+});
+
+// メインエリアのクリック（ダッシュボード→アーティスト切替）
+document.getElementById('app').addEventListener('click', (e) => {
+  // カラーピッカー切替ボタン
+  const colorBtn = e.target.closest('#heroColorBtn');
+  if (colorBtn) {
+    e.stopPropagation();
+    const picker = document.getElementById('heroColorPicker');
+    if (picker) picker.classList.toggle('open');
+    return;
+  }
+  // カラースウォッチ選択
+  const swatch = e.target.closest('.color-swatch');
+  if (swatch) {
+    e.stopPropagation();
+    const newColor = swatch.getAttribute('data-color');
+    const artist = getActiveArtist();
+    if (!artist || !newColor) return;
+    updateArtistColor(artist.id, newColor);
+    // 即座にテーマ反映
+    const updated = getActiveArtist();
+    applyThemeColor(updated);
+    // ピッカー内のselected更新
+    document.querySelectorAll('.color-swatch').forEach(s => {
+      s.classList.toggle('selected', s.getAttribute('data-color').toLowerCase() === newColor.toLowerCase());
+    });
+    // ヒーローのカラーボタン色も更新
+    const hb = document.getElementById('heroColorBtn');
+    if (hb) hb.style.background = newColor;
+    // サイドバー再描画（バッジ色を反映）
+    renderSidebar();
+    return;
+  }
+  // 関連アーティスト：登録済を開く
+  const openRelated = e.target.closest('[data-action="open-related"]');
+  if (openRelated) {
+    e.preventDefault();
+    e.stopPropagation();
+    const id = openRelated.getAttribute('data-id');
+    if (id) {
+      setActiveId(id);
+      renderApp();
+    }
+    return;
+  }
+  // 関連アーティスト：新規追加
+  const addRelated = e.target.closest('[data-action="add-related"]');
+  if (addRelated) {
+    e.preventDefault();
+    e.stopPropagation();
+    const name = addRelated.getAttribute('data-name');
+    if (!name) return;
+    if (confirm(`「${name}」をアーティストとして追加しますか？`)) {
+      const newArtist = addArtist(name);
+      setActiveId(newArtist.id);
+      renderApp();
+    }
+    return;
+  }
+  // 通常のselectアクション
+  const item = e.target.closest('[data-action="select"]');
+  if (item) {
+    e.preventDefault();
+    const id = item.getAttribute('data-id');
+    setActiveId(id);
+    renderApp();
+  }
+});
+
+// ピッカー外クリックで閉じる
+document.addEventListener('click', (e) => {
+  const picker = document.getElementById('heroColorPicker');
+  if (!picker || !picker.classList.contains('open')) return;
+  if (!e.target.closest('#heroColorPicker') && !e.target.closest('#heroColorBtn')) {
+    picker.classList.remove('open');
+  }
+});
+
+// 「+ 追加」ボタン
+document.getElementById('addArtistBtn').addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  closeMobileSidebar();
+  // モーダル表示を少し遅延させて、サイドバーアニメーションが終わってから出す
+  setTimeout(() => {
+    showAddArtistModal();
+  }, 100);
+});
+
+// 「↻ 更新」ボタン
+document.getElementById('refreshBtn').addEventListener('click', async () => {
+  const artist = getActiveArtist();
+  if (artist) {
+    // 個別アーティスト表示中：そのアーティストだけ再取得
+    clearCacheFor(artist.id);
+    renderLoading(artist);
+    const data = await loadAllData(artist, true);
+    if (getActiveId() !== artist.id) return;
+    const related = extractRelatedArtists(data.news, artist.name);
+    document.getElementById('app').innerHTML =
+      renderHero(artist, data) +
+      renderNews(data.news, artist.id) +
+      renderTours(data.tours, artist) +
+      renderSocial(artist) +
+      renderRelated(related, artist) +
+      renderTimeline(data.news, artist.id);
+    // 表示後に既読化＋サイドバー再描画
+    setTimeout(() => {
+      if (getActiveId() === artist.id) {
+        markAsSeen(artist.id, data.news);
+        renderSidebar();
+      }
+    }, 2500);
+  } else {
+    // ダッシュボード表示中：全アーティストのキャッシュをクリアして再取得
+    const artists = loadArtists();
+    for (const a of artists) clearCacheFor(a.id);
+    renderApp();
+  }
+});
+
+// モバイル: サイドバートグル
+function closeMobileSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+document.getElementById('sidebarToggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('show');
+});
+document.getElementById('sidebarOverlay').addEventListener('click', closeMobileSidebar);
+
+renderApp();
+</script>
+
+</body>
+</html>
