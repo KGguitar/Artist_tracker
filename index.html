@@ -364,6 +364,10 @@
     transition: all 0.15s;
     flex-shrink: 0;
     box-shadow: 0 0 20px rgba(255,51,102,0.3);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(255,255,255,0.2);
+    -webkit-appearance: none;
+    appearance: none;
   }
   .sidebar-add:hover {
     background: #ff1f55;
@@ -1465,10 +1469,10 @@
       <div class="sidebar-section-label">ARTISTS</div>
       <div id="artistList"></div>
     </div>
-    <button class="sidebar-add" id="addArtistBtn">
+    <div class="sidebar-add" id="addArtistBtn" role="button" tabindex="0">
       <span>＋</span>
       <span>アーティストを追加</span>
-    </button>
+    </div>
   </aside>
 
   <main class="main">
@@ -2579,15 +2583,31 @@ document.addEventListener('click', (e) => {
 });
 
 // 「+ 追加」ボタン
-document.getElementById('addArtistBtn').addEventListener('click', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+function handleAddArtistClick(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
   closeMobileSidebar();
   // モーダル表示を少し遅延させて、サイドバーアニメーションが終わってから出す
   setTimeout(() => {
     showAddArtistModal();
   }, 100);
+}
+// document全体で委譲（最も確実、要素がいつ追加されても効く）
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#addArtistBtn')) {
+    alert('追加ボタン検出: click');
+    handleAddArtistClick(e);
+  }
 });
+document.addEventListener('touchend', (e) => {
+  if (e.target.closest('#addArtistBtn')) {
+    alert('追加ボタン検出: touchend');
+    e.preventDefault();
+    handleAddArtistClick(e);
+  }
+}, { passive: false });
 
 // 「↻ 更新」ボタン
 document.getElementById('refreshBtn').addEventListener('click', async () => {
