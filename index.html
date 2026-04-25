@@ -1934,14 +1934,6 @@ async function loadNewsOnly(artist, force=false) {
 }
 
 // ========== RENDER ==========
-function showAddArtistModal() {
-  // シンプルな prompt() を使用（スマホでも確実に表示される）
-  const name = prompt('アーティスト名を入力してください\n（例: 布袋寅泰、Eric Clapton）');
-  if (!name || !name.trim()) return;
-  const newArtist = addArtist(name.trim());
-  setActiveId(newArtist.id);
-  renderApp();
-}
 function closeAddArtistModal() {
   const m = document.getElementById('addArtistModal');
   if (m) m.remove();
@@ -2549,6 +2541,71 @@ document.addEventListener('click', (e) => {
   }
 });
 
+function showAddArtistModal() {
+  // 既存のモーダルがあれば削除
+  const existing = document.getElementById('addArtistModal');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'addArtistModal';
+  // すべてインラインstyleで指定（CSS依存を避ける）
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  `;
+  overlay.innerHTML = `
+    <div style="background:#1c1c28;border:1px solid rgba(255,255,255,0.16);border-radius:16px;padding:24px;width:100%;max-width:420px;color:#fff;">
+      <h2 style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:0.05em;margin:0 0 8px 0;">アーティストを追加</h2>
+      <p style="color:#b8b8c8;font-size:13px;margin:0 0 20px 0;">日本語・英語どちらでも</p>
+      <input type="text" id="addArtistInput" placeholder="例: 布袋寅泰、Eric Clapton..."
+             style="width:100%;padding:12px;background:#0a0a0f;border:1px solid rgba(255,255,255,0.16);border-radius:8px;color:#fff;font-size:16px;margin-bottom:16px;box-sizing:border-box;" autocomplete="off">
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" id="addArtistCancel"
+                style="padding:10px 16px;background:transparent;border:1px solid rgba(255,255,255,0.16);border-radius:8px;color:#fff;font-size:14px;cursor:pointer;">キャンセル</button>
+        <button type="button" id="addArtistSubmit"
+                style="padding:10px 20px;background:#ff3366;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">追加</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const input = document.getElementById('addArtistInput');
+  const submitBtn = document.getElementById('addArtistSubmit');
+  const cancelBtn = document.getElementById('addArtistCancel');
+
+  function submitName() {
+    const name = (input.value || '').trim();
+    if (!name) return;
+    const newArtist = addArtist(name);
+    overlay.remove();
+    setActiveId(newArtist.id);
+    renderApp();
+  }
+  function cancel() {
+    overlay.remove();
+  }
+
+  submitBtn.addEventListener('click', submitName);
+  cancelBtn.addEventListener('click', cancel);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitName();
+    } else if (e.key === 'Escape') {
+      cancel();
+    }
+  });
+
+  // フォーカス（少し遅延させて確実に）
+  setTimeout(() => input.focus(), 100);
+}
+
 // 「+ 追加」ボタン
 function handleAddArtistClick(e) {
   if (e) {
@@ -2556,31 +2613,16 @@ function handleAddArtistClick(e) {
     e.stopPropagation();
   }
   closeMobileSidebar();
-  // モーダル表示を少し遅延させて、サイドバーアニメーションが終わってから出す
+  // サイドバーアニメーションが終わってからモーダル表示
   setTimeout(() => {
     showAddArtistModal();
-  }, 300);
+  }, 280);
 }
-// document全体で委譲（最も確実、要素がいつ追加されても効く）
-let lastAddClickTime = 0;
-document.addEventListener('click', (e) => {
-  if (e.target.closest('#addArtistBtn')) {
-    // 重複防止（touchend → click の二重発火対策）
-    const now = Date.now();
-    if (now - lastAddClickTime < 500) return;
-    lastAddClickTime = now;
-    handleAddArtistClick(e);
-  }
-});
-document.addEventListener('touchend', (e) => {
-  if (e.target.closest('#addArtistBtn')) {
-    e.preventDefault();
-    const now = Date.now();
-    if (now - lastAddClickTime < 500) return;
-    lastAddClickTime = now;
-    handleAddArtistClick(e);
-  }
-}, { passive: false });
+// 直接ボタンに addEventListener（document委譲をやめる）
+const _addBtnEl = document.getElementById('addArtistBtn');
+if (_addBtnEl) {
+  _addBtnEl.addEventListener('click', handleAddArtistClick);
+}
 
 // 「↻ 更新」ボタン
 document.getElementById('refreshBtn').addEventListener('click', async () => {
