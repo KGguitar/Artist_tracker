@@ -135,88 +135,6 @@
     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   }
 
-  /* ========== RELATED ARTISTS ========== */
-  .related-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 12px;
-  }
-  .related-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    transition: all 0.2s;
-  }
-  .related-card:hover {
-    border-color: var(--artist-color);
-    transform: translateX(2px);
-  }
-  .related-card[data-registered="true"] {
-    background: var(--bg-elev);
-  }
-  .related-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-family: 'Anton', sans-serif;
-    font-size: 18px;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-  }
-  .related-body {
-    flex: 1;
-    min-width: 0;
-  }
-  .related-name {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 16px;
-    color: var(--ink);
-    line-height: 1;
-    letter-spacing: 0.03em;
-    margin-bottom: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .related-meta {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    color: var(--ink-faint);
-    letter-spacing: 0.05em;
-  }
-  .related-action {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    color: var(--artist-color);
-    background: rgba(var(--artist-color-rgb), 0.1);
-    border: 1px solid rgba(var(--artist-color-rgb), 0.3);
-    padding: 6px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    flex-shrink: 0;
-    letter-spacing: 0.05em;
-    font-weight: 600;
-    transition: all 0.15s;
-  }
-  .related-action:hover {
-    background: rgba(var(--artist-color-rgb), 0.25);
-  }
-  .related-card[data-registered="true"] .related-action {
-    color: var(--accent-3);
-    background: rgba(94, 234, 212, 0.1);
-    border-color: rgba(94, 234, 212, 0.3);
-  }
-  .related-card[data-registered="true"] .related-action:hover {
-    background: rgba(94, 234, 212, 0.25);
-  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
     background: var(--bg-deep);
@@ -224,7 +142,9 @@
     font-family: 'Inter', -apple-system, sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
+    transition: background 0.4s;
   }
+  html { background: var(--bg-deep); transition: background 0.4s; }
   body::before {
     content: '';
     position: fixed;
@@ -234,6 +154,126 @@
       radial-gradient(ellipse at bottom right, rgba(94,234,212,0.06), transparent 50%);
     pointer-events: none;
     z-index: 0;
+    transition: opacity 0.4s, background 0.4s;
+  }
+
+  /* ========== BACKGROUND PATTERNS ========== */
+  /* 各パターンは --bg-deep 変数を上書きすることで本体の背景色も切り替える */
+
+  /* 2. Deep Navy - 紺色の深い夜空 */
+  body[data-bg="navy"] { --bg-deep: #0a1228; background: #0a1228; }
+  html:has(body[data-bg="navy"]) { background: #0a1228; }
+  body[data-bg="navy"]::before {
+    background:
+      radial-gradient(ellipse at top, rgba(99,102,241,0.18), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(56,189,248,0.10), transparent 50%);
+  }
+
+  /* 3. Soft Cream - 薄ベージュ（ライト） */
+  body[data-bg="cream"] {
+    --bg-deep: #f5efe0;
+    --bg-mid: #ebe3d0;
+    --bg-card: #ffffff;
+    --bg-elev: #fafafa;
+    --ink: #2a241b;
+    --ink-mid: #5a4f3f;
+    --ink-faint: #8a7d6b;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.18);
+    background: #f5efe0;
+    color: #2a241b;
+  }
+  html:has(body[data-bg="cream"]) { background: #f5efe0; }
+  body[data-bg="cream"]::before {
+    background:
+      radial-gradient(ellipse at top left, rgba(217,119,6,0.10), transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(139,69,19,0.06), transparent 50%);
+  }
+
+  /* 4. Warm White - オフホワイト紙 */
+  body[data-bg="paper"] {
+    --bg-deep: #faf8f3;
+    --bg-mid: #f0ede5;
+    --bg-card: #ffffff;
+    --bg-elev: #fafafa;
+    --ink: #1a1a1a;
+    --ink-mid: #4a4a4a;
+    --ink-faint: #8a8a8a;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.18);
+    background: #faf8f3;
+    color: #1a1a1a;
+  }
+  html:has(body[data-bg="paper"]) { background: #faf8f3; }
+  body[data-bg="paper"]::before {
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.015) 2px, rgba(0,0,0,0.015) 3px),
+      radial-gradient(ellipse at center, rgba(0,0,0,0.02), transparent 70%);
+  }
+
+  /* 5. Forest Green - 深緑の森 */
+  body[data-bg="forest"] { --bg-deep: #0d1f15; background: #0d1f15; }
+  html:has(body[data-bg="forest"]) { background: #0d1f15; }
+  body[data-bg="forest"]::before {
+    background:
+      radial-gradient(ellipse at top left, rgba(52,211,153,0.15), transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(132,204,22,0.08), transparent 50%);
+  }
+
+  /* 6. Burgundy - 落ち着いたワインレッド */
+  body[data-bg="burgundy"] { --bg-deep: #1a0a0e; background: #1a0a0e; }
+  html:has(body[data-bg="burgundy"]) { background: #1a0a0e; }
+  body[data-bg="burgundy"]::before {
+    background:
+      radial-gradient(ellipse at top, rgba(190,18,60,0.20), transparent 55%),
+      radial-gradient(ellipse at bottom left, rgba(244,114,182,0.08), transparent 50%);
+  }
+
+  /* 7. Charcoal Mesh - 暗グレー + メッシュ */
+  body[data-bg="charcoal"] { --bg-deep: #1a1a1a; background: #1a1a1a; }
+  html:has(body[data-bg="charcoal"]) { background: #1a1a1a; }
+  body[data-bg="charcoal"]::before {
+    background:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px),
+      radial-gradient(ellipse at center, rgba(94,234,212,0.06), transparent 60%);
+    background-size: 40px 40px, 40px 40px, 100% 100%;
+  }
+
+  /* 8. Synthwave - 80s風 紫ピンク */
+  body[data-bg="synthwave"] {
+    --bg-deep: #1a0033;
+    background: linear-gradient(180deg, #1a0033 0%, #2d0052 50%, #4a0080 100%);
+    background-attachment: fixed;
+  }
+  html:has(body[data-bg="synthwave"]) { background: #1a0033; }
+  body[data-bg="synthwave"]::before {
+    background:
+      radial-gradient(ellipse at top, rgba(255,0,128,0.20), transparent 50%),
+      radial-gradient(ellipse at bottom, rgba(0,255,255,0.12), transparent 50%);
+  }
+
+  /* 9. Aurora - オーロラ風 */
+  body[data-bg="aurora"] {
+    --bg-deep: #0f1f3a;
+    background: linear-gradient(135deg, #0f1f3a 0%, #1a3a4a 50%, #0f3a2f 100%);
+    background-attachment: fixed;
+  }
+  html:has(body[data-bg="aurora"]) { background: #0f1f3a; }
+  body[data-bg="aurora"]::before {
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(52,211,153,0.18), transparent 50%),
+      radial-gradient(ellipse at 80% 70%, rgba(167,139,250,0.18), transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(56,189,248,0.10), transparent 60%);
+  }
+
+  /* 10. Vinyl - レコード盤 */
+  body[data-bg="vinyl"] { --bg-deep: #0a0a0a; background: #0a0a0a; }
+  html:has(body[data-bg="vinyl"]) { background: #0a0a0a; }
+  body[data-bg="vinyl"]::before {
+    background:
+      repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 8px, rgba(255,255,255,0.02) 8px, rgba(255,255,255,0.02) 9px),
+      radial-gradient(circle at center, rgba(255,51,102,0.08), transparent 50%);
   }
 
   /* ========== SIDEBAR LAYOUT ========== */
@@ -451,6 +491,72 @@
     background: #ff1f55;
     transform: translateY(-1px);
     box-shadow: 0 4px 24px rgba(255,51,102,0.5);
+  }
+  .sidebar-bg-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+    border: 1px solid var(--border-strong);
+    background: rgba(0,0,0,0.3);
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    margin-bottom: 8px;
+  }
+  .sidebar-bg-toggle:hover {
+    border-color: var(--accent-3);
+  }
+  .sidebar-bg-picker {
+    display: none;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 10px;
+    flex-shrink: 0;
+    margin-bottom: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+  .sidebar-bg-picker.open { display: block; }
+  .sidebar-bg-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+  .bg-swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    transition: all 0.15s;
+  }
+  .bg-swatch:hover { transform: scale(1.1); }
+  .bg-swatch.selected {
+    border-color: white;
+    box-shadow: 0 0 12px rgba(255,255,255,0.4);
+  }
+  .bg-swatch.selected::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.7);
   }
   .main {
     padding: 24px 32px 80px;
@@ -1547,6 +1653,12 @@
       <div class="sidebar-section-label">ARTISTS</div>
       <div id="artistList"></div>
     </div>
+    <button class="sidebar-bg-toggle" id="sidebarBgToggle" type="button">
+      <span>🎨</span>
+      <span>背景: <span id="sidebarBgName">Pure Black</span></span>
+      <span style="margin-left:auto;opacity:0.6">▾</span>
+    </button>
+    <div class="sidebar-bg-picker" id="sidebarBgPicker"></div>
     <button class="sidebar-add" id="addArtistBtn">
       <span>＋</span>
       <span>アーティストを追加</span>
@@ -1567,6 +1679,7 @@ const ARTISTS_KEY = 'artist_pulse_artists_v2';
 const ACTIVE_KEY = 'artist_pulse_active_v1';
 const CACHE_KEY = 'artist_pulse_cache_v8';
 const SEEN_KEY = 'artist_pulse_seen_v1'; // 既読ニュースID
+const BG_KEY = 'artist_pulse_bg_v1'; // 背景テーマ
 const LEGACY_KEY = 'artist_pulse_artist_v1'; // 旧バージョンからの移行用
 const CACHE_TTL = 10 * 60 * 1000;
 
@@ -1648,6 +1761,41 @@ function applyThemeColor(artist) {
   const root = document.documentElement;
   root.style.setProperty('--artist-color', color);
   root.style.setProperty('--artist-color-rgb', hexToRgb(color));
+}
+
+// ========== BACKGROUND THEME ==========
+const BG_PATTERNS = [
+  { id: 'black',     name: 'Pure Black',  preview: '#0a0a0f' },
+  { id: 'navy',      name: 'Deep Navy',   preview: '#0a1228' },
+  { id: 'cream',     name: 'Soft Cream',  preview: '#f5efe0' },
+  { id: 'paper',     name: 'Warm Paper',  preview: '#faf8f3' },
+  { id: 'forest',    name: 'Forest',      preview: '#0d1f15' },
+  { id: 'burgundy',  name: 'Burgundy',    preview: '#1a0a0e' },
+  { id: 'charcoal',  name: 'Charcoal',    preview: '#1a1a1a' },
+  { id: 'synthwave', name: 'Synthwave',   preview: 'linear-gradient(135deg,#1a0033,#4a0080)' },
+  { id: 'aurora',    name: 'Aurora',      preview: 'linear-gradient(135deg,#0f1f3a,#0f3a2f)' },
+  { id: 'vinyl',     name: 'Vinyl',       preview: '#0a0a0a' },
+];
+function getBgId() {
+  return localStorage.getItem(BG_KEY) || 'black';
+}
+function setBgId(id) {
+  localStorage.setItem(BG_KEY, id);
+}
+function applyBackground() {
+  const id = getBgId();
+  if (id === 'black') {
+    document.body.removeAttribute('data-bg');
+    document.documentElement.style.background = '';
+  } else {
+    document.body.setAttribute('data-bg', id);
+    // html要素にも背景を直接適用（body外まで色を覆う）
+    const pattern = BG_PATTERNS.find(p => p.id === id);
+    if (pattern) {
+      // グラデーションプレビューはそのまま、単色は単色で
+      document.documentElement.style.background = pattern.preview;
+    }
+  }
 }
 
 // ========== ARTIST CONFIG (複数管理) ==========
@@ -1786,114 +1934,6 @@ function getNewsImportance(item) {
   return { level: 'news', label: '📰', color: '#888' };
 }
 
-// ========== RELATED ARTISTS ==========
-// ニュース記事から関連アーティスト名を抽出する
-function extractRelatedArtists(news, selfName) {
-  if (!news || news.length === 0) return [];
-
-  const counter = new Map(); // name -> { count, sample (代表記事) }
-  const selfLower = selfName.toLowerCase();
-
-  // 共演を示すパターン（自分の名前の前後に出てくる人名を抽出）
-  // 区切り記号: × x ✕ X & vs feat. ft. featuring with 対バン 共演 ジョイント
-  const separatorPattern = '(?:\\s*[×xX✕＊*&]\\s*|\\s*(?:vs|VS|featuring|FEATURING|feat\\.?|ft\\.?|with|WITH|対バン|共演|ジョイント|×|＆|と)\\s*)';
-
-  // 抽出対象を絞り込む正規表現群
-  // 日本人名（漢字・ひらがな・カタカナ）または英語名
-  const namePattern = '([一-龥ぁ-んァ-ヶー]{2,15}|[A-Za-z][A-Za-z0-9\\s.&\'-]{1,30}[A-Za-z0-9])';
-
-  for (const item of news) {
-    const text = (item.title || '') + ' ' + (item.desc || '');
-
-    // パターン1: 「A × B」「A & B」「A feat. B」「A vs B」など
-    // 自分の名前を含む共演表現を検索
-    const escapedSelf = selfName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const escapedSelfLower = selfLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-    // 自分の前後にある名前を抽出
-    const patterns = [
-      new RegExp(`${escapedSelf}${separatorPattern}${namePattern}`, 'g'),
-      new RegExp(`${namePattern}${separatorPattern}${escapedSelf}`, 'g'),
-      new RegExp(`${escapedSelfLower}${separatorPattern}${namePattern}`, 'gi'),
-    ];
-
-    for (const re of patterns) {
-      let m;
-      while ((m = re.exec(text)) !== null) {
-        const candidate = (m[1] || '').trim();
-        if (isValidArtistName(candidate, selfName)) {
-          addCandidate(counter, candidate, item);
-        }
-      }
-    }
-  }
-
-  // パターン2: 既存登録アーティストの名前がニュースに頻出する場合
-  const registeredArtists = loadArtists();
-  for (const reg of registeredArtists) {
-    if (reg.name === selfName) continue;
-    let count = 0;
-    let sampleItem = null;
-    for (const item of news) {
-      const text = (item.title || '') + ' ' + (item.desc || '');
-      if (text.includes(reg.name)) {
-        count++;
-        if (!sampleItem) sampleItem = item;
-      }
-    }
-    if (count >= 1) {
-      // 既存登録は信頼性が高いので、共演パターンでヒットしてなくても候補化
-      addCandidate(counter, reg.name, sampleItem, count + 1);
-    }
-  }
-
-  // 集計結果を配列化、頻度順にソート
-  const sorted = Array.from(counter.values())
-    .map(info => ({ name: info.displayName, count: info.count, sample: info.sample }))
-    .sort((a, b) => b.count - a.count);
-
-  return sorted.slice(0, 12);
-}
-
-function isValidArtistName(name, selfName) {
-  if (!name) return false;
-  if (name === selfName || name.toLowerCase() === selfName.toLowerCase()) return false;
-  if (name.length < 2 || name.length > 30) return false;
-  // よくあるノイズ単語を除外
-  const noiseWords = [
-    'ライブ','ツアー','コンサート','公演','フェス','単独','追加','チケット','発表','発売','決定',
-    '新曲','新譜','アルバム','シングル','配信','MV','音楽','メディア','インタビュー','特集',
-    'YouTube','Spotify','Apple','こちら','詳細','レポート','ニュース','記事','続き','ら',
-    '一覧','まとめ','ランキング','本人','メンバー','スタッフ','ファン','登場','出演','参加',
-    '今回','今年','今月','今夜','本日','明日','昨日','前回','次回','今後','以上','以下',
-    'デビュー','復活','解散','再結成','結成','新加入','脱退','受賞','卒業','活動','休止',
-    'tour','concert','live','show','album','single','release','feat','featuring',
-    'with','vs','versus','ft','official','music','video','news','tickets',
-  ];
-  for (const noise of noiseWords) {
-    if (name === noise || name.toLowerCase() === noise.toLowerCase()) return false;
-  }
-  // 日本語1文字の漢字混じり、不自然な短さ等は除外
-  if (/^[ぁ-んァ-ヶー]{2,3}$/.test(name)) {
-    // 「これ」「あの」みたいなのを除く（短すぎる）
-    if (name.length <= 3) return false;
-  }
-  // 数字主体は除外
-  if (/^\d+$/.test(name)) return false;
-  return true;
-}
-
-function addCandidate(counter, name, sample, weight = 1) {
-  // 同じ人を別表記で重複しないよう正規化（小文字化キー）
-  const key = name.toLowerCase();
-  if (counter.has(key)) {
-    const existing = counter.get(key);
-    existing.count += weight;
-    if (!existing.sample && sample) existing.sample = sample;
-  } else {
-    counter.set(key, { count: weight, sample, displayName: name });
-  }
-}
 async function fetchWithProxy(url, attempt = 1) {
   // 全プロキシを順番に試す。最大2回繰り返し（attempt = 1, 2）
   for (let i = 0; i < PROXIES.length; i++) {
@@ -2426,42 +2466,6 @@ function renderTicketLinks(artist) {
   `).join('');
 }
 
-function renderRelated(related, currentArtist) {
-  if (!related || related.length === 0) return '';
-
-  const registeredArtists = loadArtists();
-  const registeredNames = new Set(registeredArtists.map(a => a.name.toLowerCase()));
-
-  const cards = related.map(r => {
-    const isRegistered = registeredNames.has(r.name.toLowerCase());
-    const registered = registeredArtists.find(a => a.name.toLowerCase() === r.name.toLowerCase());
-    const color = registered ? getArtistColor(registered) : 'var(--ink-faint)';
-
-    return `
-      <div class="related-card" data-name="${escapeHtml(r.name)}" data-registered="${isRegistered ? 'true' : 'false'}" ${registered ? `data-id="${escapeHtml(registered.id)}"` : ''}>
-        <div class="related-avatar" style="background:${color}">${escapeHtml(r.name.charAt(0).toUpperCase())}</div>
-        <div class="related-body">
-          <div class="related-name">${escapeHtml(r.name)}</div>
-          <div class="related-meta">${r.count}件の言及${isRegistered ? ' · 登録済' : ''}</div>
-        </div>
-        <button class="related-action" data-action="${isRegistered ? 'open-related' : 'add-related'}" data-name="${escapeHtml(r.name)}" ${registered ? `data-id="${escapeHtml(registered.id)}"` : ''}>
-          ${isRegistered ? 'OPEN →' : '+ 追加'}
-        </button>
-      </div>
-    `;
-  }).join('');
-
-  return `
-    <section class="section">
-      <div class="section-header">
-        <div class="section-title"><span class="section-title-icon"></span>RELATED ARTISTS</div>
-        <span class="section-count">${related.length}人を発見</span>
-      </div>
-      <div class="related-grid">${cards}</div>
-    </section>
-  `;
-}
-
 function renderTimeline(news, artistId) {
   if (!news?.length) return '';
   const items = news.slice(0, 12);
@@ -2706,13 +2710,11 @@ async function renderApp() {
 
   // 表示中もアクティブが変わってなければ反映
   if (getActiveId() !== activeArtist.id) return;
-  const related = extractRelatedArtists(data.news, activeArtist.name);
   document.getElementById('app').innerHTML =
     renderHero(activeArtist, data) +
     renderNews(data.news, activeArtist.id) +
     renderTours(data.tours, activeArtist) +
     renderSocial(activeArtist) +
-    renderRelated(related, activeArtist) +
     renderTimeline(data.news, activeArtist.id);
 
   // 表示後に少し待ってから既読化（NEWバッジが見えてから消える）
@@ -2786,32 +2788,6 @@ document.getElementById('app').addEventListener('click', (e) => {
     renderSidebar();
     return;
   }
-  // 関連アーティスト：登録済を開く
-  const openRelated = e.target.closest('[data-action="open-related"]');
-  if (openRelated) {
-    e.preventDefault();
-    e.stopPropagation();
-    const id = openRelated.getAttribute('data-id');
-    if (id) {
-      setActiveId(id);
-      renderApp();
-    }
-    return;
-  }
-  // 関連アーティスト：新規追加
-  const addRelated = e.target.closest('[data-action="add-related"]');
-  if (addRelated) {
-    e.preventDefault();
-    e.stopPropagation();
-    const name = addRelated.getAttribute('data-name');
-    if (!name) return;
-    if (confirm(`「${name}」をアーティストとして追加しますか？`)) {
-      const newArtist = addArtist(name);
-      setActiveId(newArtist.id);
-      renderApp();
-    }
-    return;
-  }
   // 通常のselectアクション
   const item = e.target.closest('[data-action="select"]');
   if (item) {
@@ -2829,6 +2805,40 @@ document.addEventListener('click', (e) => {
   if (!e.target.closest('#heroColorPicker') && !e.target.closest('#heroColorBtn')) {
     picker.classList.remove('open');
   }
+});
+
+// 背景ピッカー初期化
+function renderBgPicker() {
+  const currentId = getBgId();
+  const current = BG_PATTERNS.find(p => p.id === currentId) || BG_PATTERNS[0];
+  document.getElementById('sidebarBgName').textContent = current.name;
+  const picker = document.getElementById('sidebarBgPicker');
+  picker.innerHTML = `<div class="sidebar-bg-picker-grid">${
+    BG_PATTERNS.map(p => `
+      <button class="bg-swatch ${p.id === currentId ? 'selected' : ''}"
+              data-bg-id="${p.id}"
+              title="${p.name}"
+              style="background:${p.preview}"></button>
+    `).join('')
+  }</div>`;
+}
+renderBgPicker();
+applyBackground();
+
+document.getElementById('sidebarBgToggle').addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  document.getElementById('sidebarBgPicker').classList.toggle('open');
+});
+document.getElementById('sidebarBgPicker').addEventListener('click', (e) => {
+  const swatch = e.target.closest('.bg-swatch');
+  if (!swatch) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const id = swatch.getAttribute('data-bg-id');
+  setBgId(id);
+  applyBackground();
+  renderBgPicker();
 });
 
 // 「+ 追加」ボタン
@@ -2851,13 +2861,11 @@ document.getElementById('refreshBtn').addEventListener('click', async () => {
     renderLoading(artist);
     const data = await loadAllData(artist, true);
     if (getActiveId() !== artist.id) return;
-    const related = extractRelatedArtists(data.news, artist.name);
     document.getElementById('app').innerHTML =
       renderHero(artist, data) +
       renderNews(data.news, artist.id) +
       renderTours(data.tours, artist) +
       renderSocial(artist) +
-      renderRelated(related, artist) +
       renderTimeline(data.news, artist.id);
     // 表示後に既読化＋サイドバー再描画
     setTimeout(() => {
