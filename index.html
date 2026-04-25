@@ -142,9 +142,7 @@
     font-family: 'Inter', -apple-system, sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
-    transition: background 0.4s;
   }
-  html { background: var(--bg-deep); transition: background 0.4s; }
   body::before {
     content: '';
     position: fixed;
@@ -154,126 +152,6 @@
       radial-gradient(ellipse at bottom right, rgba(94,234,212,0.06), transparent 50%);
     pointer-events: none;
     z-index: 0;
-    transition: opacity 0.4s, background 0.4s;
-  }
-
-  /* ========== BACKGROUND PATTERNS ========== */
-  /* 各パターンは --bg-deep 変数を上書きすることで本体の背景色も切り替える */
-
-  /* 2. Deep Navy - 紺色の深い夜空 */
-  body[data-bg="navy"] { --bg-deep: #0a1228; background: #0a1228; }
-  html:has(body[data-bg="navy"]) { background: #0a1228; }
-  body[data-bg="navy"]::before {
-    background:
-      radial-gradient(ellipse at top, rgba(99,102,241,0.18), transparent 60%),
-      radial-gradient(ellipse at bottom right, rgba(56,189,248,0.10), transparent 50%);
-  }
-
-  /* 3. Soft Cream - 薄ベージュ（ライト） */
-  body[data-bg="cream"] {
-    --bg-deep: #f5efe0;
-    --bg-mid: #ebe3d0;
-    --bg-card: #ffffff;
-    --bg-elev: #fafafa;
-    --ink: #2a241b;
-    --ink-mid: #5a4f3f;
-    --ink-faint: #8a7d6b;
-    --border: rgba(0,0,0,0.08);
-    --border-strong: rgba(0,0,0,0.18);
-    background: #f5efe0;
-    color: #2a241b;
-  }
-  html:has(body[data-bg="cream"]) { background: #f5efe0; }
-  body[data-bg="cream"]::before {
-    background:
-      radial-gradient(ellipse at top left, rgba(217,119,6,0.10), transparent 50%),
-      radial-gradient(ellipse at bottom right, rgba(139,69,19,0.06), transparent 50%);
-  }
-
-  /* 4. Warm White - オフホワイト紙 */
-  body[data-bg="paper"] {
-    --bg-deep: #faf8f3;
-    --bg-mid: #f0ede5;
-    --bg-card: #ffffff;
-    --bg-elev: #fafafa;
-    --ink: #1a1a1a;
-    --ink-mid: #4a4a4a;
-    --ink-faint: #8a8a8a;
-    --border: rgba(0,0,0,0.08);
-    --border-strong: rgba(0,0,0,0.18);
-    background: #faf8f3;
-    color: #1a1a1a;
-  }
-  html:has(body[data-bg="paper"]) { background: #faf8f3; }
-  body[data-bg="paper"]::before {
-    background:
-      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.015) 2px, rgba(0,0,0,0.015) 3px),
-      radial-gradient(ellipse at center, rgba(0,0,0,0.02), transparent 70%);
-  }
-
-  /* 5. Forest Green - 深緑の森 */
-  body[data-bg="forest"] { --bg-deep: #0d1f15; background: #0d1f15; }
-  html:has(body[data-bg="forest"]) { background: #0d1f15; }
-  body[data-bg="forest"]::before {
-    background:
-      radial-gradient(ellipse at top left, rgba(52,211,153,0.15), transparent 50%),
-      radial-gradient(ellipse at bottom right, rgba(132,204,22,0.08), transparent 50%);
-  }
-
-  /* 6. Burgundy - 落ち着いたワインレッド */
-  body[data-bg="burgundy"] { --bg-deep: #1a0a0e; background: #1a0a0e; }
-  html:has(body[data-bg="burgundy"]) { background: #1a0a0e; }
-  body[data-bg="burgundy"]::before {
-    background:
-      radial-gradient(ellipse at top, rgba(190,18,60,0.20), transparent 55%),
-      radial-gradient(ellipse at bottom left, rgba(244,114,182,0.08), transparent 50%);
-  }
-
-  /* 7. Charcoal Mesh - 暗グレー + メッシュ */
-  body[data-bg="charcoal"] { --bg-deep: #1a1a1a; background: #1a1a1a; }
-  html:has(body[data-bg="charcoal"]) { background: #1a1a1a; }
-  body[data-bg="charcoal"]::before {
-    background:
-      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px),
-      radial-gradient(ellipse at center, rgba(94,234,212,0.06), transparent 60%);
-    background-size: 40px 40px, 40px 40px, 100% 100%;
-  }
-
-  /* 8. Synthwave - 80s風 紫ピンク */
-  body[data-bg="synthwave"] {
-    --bg-deep: #1a0033;
-    background: linear-gradient(180deg, #1a0033 0%, #2d0052 50%, #4a0080 100%);
-    background-attachment: fixed;
-  }
-  html:has(body[data-bg="synthwave"]) { background: #1a0033; }
-  body[data-bg="synthwave"]::before {
-    background:
-      radial-gradient(ellipse at top, rgba(255,0,128,0.20), transparent 50%),
-      radial-gradient(ellipse at bottom, rgba(0,255,255,0.12), transparent 50%);
-  }
-
-  /* 9. Aurora - オーロラ風 */
-  body[data-bg="aurora"] {
-    --bg-deep: #0f1f3a;
-    background: linear-gradient(135deg, #0f1f3a 0%, #1a3a4a 50%, #0f3a2f 100%);
-    background-attachment: fixed;
-  }
-  html:has(body[data-bg="aurora"]) { background: #0f1f3a; }
-  body[data-bg="aurora"]::before {
-    background:
-      radial-gradient(ellipse at 20% 30%, rgba(52,211,153,0.18), transparent 50%),
-      radial-gradient(ellipse at 80% 70%, rgba(167,139,250,0.18), transparent 50%),
-      radial-gradient(ellipse at 50% 50%, rgba(56,189,248,0.10), transparent 60%);
-  }
-
-  /* 10. Vinyl - レコード盤 */
-  body[data-bg="vinyl"] { --bg-deep: #0a0a0a; background: #0a0a0a; }
-  html:has(body[data-bg="vinyl"]) { background: #0a0a0a; }
-  body[data-bg="vinyl"]::before {
-    background:
-      repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 8px, rgba(255,255,255,0.02) 8px, rgba(255,255,255,0.02) 9px),
-      radial-gradient(circle at center, rgba(255,51,102,0.08), transparent 50%);
   }
 
   /* ========== SIDEBAR LAYOUT ========== */
@@ -491,72 +369,6 @@
     background: #ff1f55;
     transform: translateY(-1px);
     box-shadow: 0 4px 24px rgba(255,51,102,0.5);
-  }
-  .sidebar-bg-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    color: #ffffff;
-    cursor: pointer;
-    border: 1px solid var(--border-strong);
-    background: rgba(0,0,0,0.3);
-    width: 100%;
-    text-align: left;
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    transition: all 0.15s;
-    flex-shrink: 0;
-    margin-bottom: 8px;
-  }
-  .sidebar-bg-toggle:hover {
-    border-color: var(--accent-3);
-  }
-  .sidebar-bg-picker {
-    display: none;
-    background: rgba(0,0,0,0.4);
-    border: 1px solid var(--border-strong);
-    border-radius: 8px;
-    padding: 10px;
-    flex-shrink: 0;
-    margin-bottom: 8px;
-    max-height: 240px;
-    overflow-y: auto;
-  }
-  .sidebar-bg-picker.open { display: block; }
-  .sidebar-bg-picker-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-  }
-  .bg-swatch {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 6px;
-    border: 2px solid transparent;
-    cursor: pointer;
-    padding: 0;
-    position: relative;
-    transition: all 0.15s;
-  }
-  .bg-swatch:hover { transform: scale(1.1); }
-  .bg-swatch.selected {
-    border-color: white;
-    box-shadow: 0 0 12px rgba(255,255,255,0.4);
-  }
-  .bg-swatch.selected::after {
-    content: '✓';
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 12px;
-    font-weight: 700;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.7);
   }
   .main {
     padding: 24px 32px 80px;
@@ -1653,12 +1465,6 @@
       <div class="sidebar-section-label">ARTISTS</div>
       <div id="artistList"></div>
     </div>
-    <button class="sidebar-bg-toggle" id="sidebarBgToggle" type="button">
-      <span>🎨</span>
-      <span>背景: <span id="sidebarBgName">Pure Black</span></span>
-      <span style="margin-left:auto;opacity:0.6">▾</span>
-    </button>
-    <div class="sidebar-bg-picker" id="sidebarBgPicker"></div>
     <button class="sidebar-add" id="addArtistBtn">
       <span>＋</span>
       <span>アーティストを追加</span>
@@ -1679,7 +1485,6 @@ const ARTISTS_KEY = 'artist_pulse_artists_v2';
 const ACTIVE_KEY = 'artist_pulse_active_v1';
 const CACHE_KEY = 'artist_pulse_cache_v8';
 const SEEN_KEY = 'artist_pulse_seen_v1'; // 既読ニュースID
-const BG_KEY = 'artist_pulse_bg_v1'; // 背景テーマ
 const LEGACY_KEY = 'artist_pulse_artist_v1'; // 旧バージョンからの移行用
 const CACHE_TTL = 10 * 60 * 1000;
 
@@ -1763,40 +1568,6 @@ function applyThemeColor(artist) {
   root.style.setProperty('--artist-color-rgb', hexToRgb(color));
 }
 
-// ========== BACKGROUND THEME ==========
-const BG_PATTERNS = [
-  { id: 'black',     name: 'Pure Black',  preview: '#0a0a0f' },
-  { id: 'navy',      name: 'Deep Navy',   preview: '#0a1228' },
-  { id: 'cream',     name: 'Soft Cream',  preview: '#f5efe0' },
-  { id: 'paper',     name: 'Warm Paper',  preview: '#faf8f3' },
-  { id: 'forest',    name: 'Forest',      preview: '#0d1f15' },
-  { id: 'burgundy',  name: 'Burgundy',    preview: '#1a0a0e' },
-  { id: 'charcoal',  name: 'Charcoal',    preview: '#1a1a1a' },
-  { id: 'synthwave', name: 'Synthwave',   preview: 'linear-gradient(135deg,#1a0033,#4a0080)' },
-  { id: 'aurora',    name: 'Aurora',      preview: 'linear-gradient(135deg,#0f1f3a,#0f3a2f)' },
-  { id: 'vinyl',     name: 'Vinyl',       preview: '#0a0a0a' },
-];
-function getBgId() {
-  return localStorage.getItem(BG_KEY) || 'black';
-}
-function setBgId(id) {
-  localStorage.setItem(BG_KEY, id);
-}
-function applyBackground() {
-  const id = getBgId();
-  if (id === 'black') {
-    document.body.removeAttribute('data-bg');
-    document.documentElement.style.background = '';
-  } else {
-    document.body.setAttribute('data-bg', id);
-    // html要素にも背景を直接適用（body外まで色を覆う）
-    const pattern = BG_PATTERNS.find(p => p.id === id);
-    if (pattern) {
-      // グラデーションプレビューはそのまま、単色は単色で
-      document.documentElement.style.background = pattern.preview;
-    }
-  }
-}
 
 // ========== ARTIST CONFIG (複数管理) ==========
 function loadArtists() {
@@ -2805,40 +2576,6 @@ document.addEventListener('click', (e) => {
   if (!e.target.closest('#heroColorPicker') && !e.target.closest('#heroColorBtn')) {
     picker.classList.remove('open');
   }
-});
-
-// 背景ピッカー初期化
-function renderBgPicker() {
-  const currentId = getBgId();
-  const current = BG_PATTERNS.find(p => p.id === currentId) || BG_PATTERNS[0];
-  document.getElementById('sidebarBgName').textContent = current.name;
-  const picker = document.getElementById('sidebarBgPicker');
-  picker.innerHTML = `<div class="sidebar-bg-picker-grid">${
-    BG_PATTERNS.map(p => `
-      <button class="bg-swatch ${p.id === currentId ? 'selected' : ''}"
-              data-bg-id="${p.id}"
-              title="${p.name}"
-              style="background:${p.preview}"></button>
-    `).join('')
-  }</div>`;
-}
-renderBgPicker();
-applyBackground();
-
-document.getElementById('sidebarBgToggle').addEventListener('click', (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  document.getElementById('sidebarBgPicker').classList.toggle('open');
-});
-document.getElementById('sidebarBgPicker').addEventListener('click', (e) => {
-  const swatch = e.target.closest('.bg-swatch');
-  if (!swatch) return;
-  e.preventDefault();
-  e.stopPropagation();
-  const id = swatch.getAttribute('data-bg-id');
-  setBgId(id);
-  applyBackground();
-  renderBgPicker();
 });
 
 // 「+ 追加」ボタン
