@@ -163,7 +163,7 @@
   }
   .sidebar {
     border-right: 1px solid var(--border);
-    background: rgba(20, 20, 29, 0.92);
+    background: rgba(20, 20, 29, 0.85);
     backdrop-filter: blur(8px);
     padding: 24px 16px;
     position: fixed;
@@ -171,24 +171,12 @@
     top: 0;
     width: 240px;
     height: 100vh;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    overflow: hidden;
-    z-index: 10;
-  }
-  .sidebar-scroll {
-    flex: 1;
-    min-height: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin: 0 -4px;
-    padding: 0 4px;
+    gap: 8px;
+    z-index: 10;
   }
-  .sidebar-scroll::-webkit-scrollbar { width: 4px; }
-  .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
   #artistList {
     display: flex;
     flex-direction: column;
@@ -348,31 +336,22 @@
   .sidebar-add {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 14px 12px;
+    gap: 10px;
+    padding: 10px 12px;
     border-radius: 8px;
-    color: white;
+    color: var(--ink-faint);
     cursor: pointer;
-    border: none;
-    background: var(--accent);
+    border: 1px dashed var(--border-strong);
+    background: transparent;
     width: 100%;
-    text-align: center;
+    text-align: left;
     font-family: inherit;
     font-size: 14px;
-    font-weight: 700;
     transition: all 0.15s;
-    flex-shrink: 0;
-    box-shadow: 0 0 20px rgba(255,51,102,0.3);
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: rgba(255,255,255,0.2);
-    -webkit-appearance: none;
-    appearance: none;
   }
   .sidebar-add:hover {
-    background: #ff1f55;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 24px rgba(255,51,102,0.5);
+    border-color: var(--accent-3);
+    color: var(--accent-3);
   }
   .main {
     padding: 24px 32px 80px;
@@ -1223,27 +1202,17 @@
       height: 100dvh;
       max-height: 100vh;
       max-height: 100dvh;
-      z-index: 50;
+      z-index: 100;
       transform: translateX(-100%);
       transition: transform 0.25s;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      isolation: isolate;
     }
     .sidebar.open { transform: translateX(0); }
     .sidebar-toggle {
       display: flex !important;
-    }
-    .sidebar-scroll {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-    }
-    .sidebar-add {
-      flex-shrink: 0;
-      position: relative;
-      z-index: 100;
-      margin: 8px 0 0 0;
     }
     .main { padding: 16px 20px 60px; }
     .container { padding: 16px 20px 60px; }
@@ -1291,9 +1260,12 @@
   .sidebar-overlay {
     display: none;
     position: fixed;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 240px;
     background: rgba(0,0,0,0.5);
-    z-index: 40;
+    z-index: 30;
   }
   .sidebar-overlay.show { display: block; }
 
@@ -1455,7 +1427,6 @@
 <body>
 
 <button class="sidebar-toggle" id="sidebarToggle">☰</button>
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <div class="layout">
   <aside class="sidebar" id="sidebar">
@@ -1464,19 +1435,18 @@
       <div class="logo-text">ARTIST<span style="color:var(--accent)">·</span>PULSE</div>
     </div>
     <div class="sidebar-divider"></div>
-    <div class="sidebar-scroll">
-      <a class="sidebar-item" id="dashboardItem" data-action="dashboard">
-        <span>◇</span>
-        <span class="sidebar-item-name">Dashboard</span>
-      </a>
-      <div class="sidebar-section-label">ARTISTS</div>
-      <div id="artistList"></div>
-    </div>
-    <button class="sidebar-add" id="addArtistBtn" type="button">
-      <span style="pointer-events:none">＋</span>
-      <span style="pointer-events:none">アーティストを追加</span>
-    </button>
+    <a class="sidebar-item" id="dashboardItem" data-action="dashboard">
+      <span>◇</span>
+      <span class="sidebar-item-name">Dashboard</span>
+    </a>
+    <div class="sidebar-section-label">ARTISTS</div>
+    <div id="artistList"></div>
+    <a class="sidebar-add" id="addArtistBtn" href="#" data-action="add-artist">
+      <span>＋</span>
+      <span>アーティストを追加</span>
+    </a>
   </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
   <main class="main">
     <div class="main-topbar">
@@ -2480,6 +2450,7 @@ document.getElementById('sidebar').addEventListener('click', (e) => {
   }
   const item = e.target.closest('[data-action]');
   if (!item) return;
+  e.preventDefault();
   const action = item.getAttribute('data-action');
   if (action === 'dashboard') {
     setActiveId(null);
@@ -2490,6 +2461,8 @@ document.getElementById('sidebar').addEventListener('click', (e) => {
     setActiveId(id);
     closeMobileSidebar();
     renderApp();
+  } else if (action === 'add-artist') {
+    showAddArtistModal();
   }
 });
 
@@ -2607,19 +2580,6 @@ function showAddArtistModal() {
 
   // フォーカス（少し遅延させて確実に）
   setTimeout(() => input.focus(), 100);
-}
-
-// 「+ 追加」ボタン
-function handleAddArtistClick(e) {
-    if (e) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-  showAddArtistModal();
-}
-const _addBtnEl = document.getElementById('addArtistBtn');
-if (_addBtnEl) {
-  _addBtnEl.addEventListener('click', handleAddArtistClick);
 }
 
 // 「↻ 更新」ボタン
