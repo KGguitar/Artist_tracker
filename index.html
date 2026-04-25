@@ -1451,10 +1451,13 @@
   }
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
 </head>
 <body>
 
 <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+<button class="fab-add" id="fabAdd" type="button" aria-label="アーティスト追加">＋</button>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <div class="layout">
@@ -1487,6 +1490,7 @@
 </div>
 
 <script>
+console.log('[SCRIPT] start');
 // ========== STATE ==========
 const ARTISTS_KEY = 'artist_pulse_artists_v2';
 const ACTIVE_KEY = 'artist_pulse_active_v1';
@@ -2610,18 +2614,29 @@ function showAddArtistModal() {
 }
 
 // 「+ 追加」ボタン
+console.log('[SCRIPT] reached addArtistBtn setup');
 function handleAddArtistClick(e) {
+  console.log('[1] handleAddArtistClick called', e);
   if (e) {
     e.preventDefault();
     e.stopPropagation();
   }
-  // サイドバーを閉じずに即モーダル表示（スマホ対応）
-  showAddArtistModal();
+  console.log('[2] calling showAddArtistModal');
+  try {
+    showAddArtistModal();
+    console.log('[3] showAddArtistModal returned');
+  } catch (err) {
+    console.error('[ERROR]', err);
+  }
 }
 // 直接ボタンに addEventListener（document委譲をやめる）
 const _addBtnEl = document.getElementById('addArtistBtn');
+console.log('[INIT] addArtistBtn element:', _addBtnEl);
 if (_addBtnEl) {
   _addBtnEl.addEventListener('click', handleAddArtistClick);
+  _addBtnEl.addEventListener('touchstart', () => console.log('[TOUCH] touchstart'), { passive: true });
+  _addBtnEl.addEventListener('touchend', () => console.log('[TOUCH] touchend'), { passive: true });
+  console.log('[INIT] listeners attached');
 }
 
 // 「↻ 更新」ボタン
